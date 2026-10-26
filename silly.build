@@ -1,0 +1,3 @@
+// Core has no native sources yet. Transport is added in E1.S3.
+// Outbound client libraries belong to the separate client package (E9.S1).
+c_sources = [];
