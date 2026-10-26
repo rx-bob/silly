@@ -1,166 +1,143 @@
-// Initial bounded GET head parser. E2 extends framing, methods and connection persistence.
+// Incremental HTTP head scanner. Errors are sticky; only complete validated heads expose views.
 namespace silly;
 
-import std;
-
 import.headers;
+import.http_head_types;
+import.http_headers;
+import.http_request_line;
 import.limits;
 
-enum HeadResult {
-    NeedMore,
-    Complete,
-    BadRequest,
-    HeadLimit,
-    HeaderLimit,
-    UnsupportedMethod,
-    UnsupportedBody,
-    UnsupportedVersion,
-}
-
-struct HeadScan {
-    checked_bytes: i64 = 0,
-    head_bytes: i64 = 0,
-}
-
-struct ParsedHead {
-    result: HeadResult = HeadResult.BadRequest,
-    target: const u8[:] = "",
-    http_minor: i32 = 1,
-}
-
-// Each appended byte is examined at most four times. Reset the state with its input owner.
-fn scan_head(scan: HeadScan&, input: u8[:], limit: i64) -> HeadResult {
-    if limit <= 0 || input.len > limit {
-        return HeadResult.HeadLimit;
+fn scan_head(scan: HeadScan&, input: u8[:], limits: Limits) -> HeadResult {
+    if scan.result != HeadResult.NeedMore {
+        return scan.result;
     }
-    if scan.checked_bytes > input.len {
-        return HeadResult.BadRequest;
+    if !valid(limits) || scan.checked_bytes > input.len {
+        scan.result = HeadResult.BadRequest;
+        return scan.result;
     }
-    if scan.head_bytes > 0 {
-        return HeadResult.Complete;
-    }
-    var index = max(0, scan.checked_bytes - 3);
-    while index <= input.len - 4 {
-        if input[index] == '\r' && input[index + 1] == '\n'
-            && input[index + 2] == '\r' && input[index + 3] == '\n' {
-            scan.head_bytes = index + 4;
-            return HeadResult.Complete;
+    while scan.checked_bytes < input.len {
+        scan.result = scan_head_byte(scan, input, limits);
+        if scan.result != HeadResult.NeedMore {
+            return scan.result;
         }
-        index += 1;
     }
-    scan.checked_bytes = input.len;
-    if input.len == limit {
+    if scan.checked_bytes == limits.head_bytes_max {
+        scan.result = HeadResult.HeadLimit;
+    }
+    return scan.result;
+}
+
+// E1 compatibility overload; new callers supply all named limits.
+fn scan_head(scan: HeadScan&, input: u8[:], limit: i64) -> HeadResult {
+    return scan_head(scan, input, Limits {
+            head_bytes_max: limit,
+            ..
+        });
+}
+
+fn scan_head_byte(scan: HeadScan&, input: u8[:], limits: Limits) -> HeadResult {
+    let index = scan.checked_bytes;
+    let line_bytes = index - scan.line_start + 1;
+    if index >= limits.head_bytes_max {
         return HeadResult.HeadLimit;
+    }
+    if scan.request_line_end < 0 && line_bytes > limits.request_line_bytes_max {
+        return HeadResult.RequestLineLimit;
+    }
+    if scan.request_line_end >= 0 && (line_bytes > limits.header_line_bytes_max
+        || index - scan.header_section_start + 1 > limits.header_section_bytes_max) {
+        return HeadResult.HeaderLimit;
+    }
+    let byte = input[index];
+    scan.checked_bytes += 1;
+    if scan.pending_cr {
+        scan.pending_cr = false;
+        if byte != '\n' {
+            return HeadResult.BadRequest;
+        }
+        return finish_head_line(scan, input, limits);
+    }
+    if byte == '\r' {
+        scan.pending_cr = true;
+    } else if byte == '\n' || byte == 127 || (byte < 32 && byte != '\t') {
+        return HeadResult.BadRequest;
     }
     return HeadResult.NeedMore;
 }
 
-// Input must be exactly the complete head. Header views borrow input and preserve wire order.
-// On failure the caller discards fields; no handler may inspect the partial parse.
-fn parse_get_head(input: u8[:], fields: HeaderView[>..]&, limits: Limits) -> ParsedHead {
-    if !valid(limits) || input.len > limits.head_bytes_max {
-        return ParsedHead {
-            result: HeadResult.HeadLimit,
-            ..
-        };
+fn finish_head_line(scan: HeadScan&, input: u8[:], limits: Limits) -> HeadResult {
+    let end = scan.checked_bytes - 2;
+    if scan.request_line_end < 0 {
+        let line = parse_request_line(input[..end]);
+        if line.result != HeadResult.Complete {
+            return line.result;
+        }
+        scan.request_line_end = end;
+        scan.header_section_start = scan.checked_bytes;
+    } else if end == scan.line_start {
+        scan.head_bytes = scan.checked_bytes;
+        return HeadResult.Complete;
+    } else {
+        scan.field_count += 1;
+        if scan.field_count > limits.header_count_max {
+            return HeadResult.HeaderLimit;
+        }
+        let line = input[scan.line_start..end];
+        let colon = head_byte_index(line, ':', 0);
+        if colon <= 0 || !valid_header_name(line[..colon]) || !valid_header_value(line[colon + 1..]) {
+            return HeadResult.BadRequest;
+        }
     }
+    scan.line_start = scan.checked_bytes;
+    return HeadResult.NeedMore;
+}
+
+// Bytes after head_bytes are untouched and remain available to the next protocol stage.
+fn parse_head(input: u8[:], fields: HeaderView[>..]&, limits: Limits) -> ParsedHead {
     if fields.len != 0 {
         return ParsedHead {
         };
     }
-    let line_end = head_line_end(input, 0);
-    if line_end < 0 {
-        return ParsedHead {
-        };
-    }
-    let parsed = parse_get_line(input[..line_end]);
-    if parsed.result != HeadResult.Complete {
-        return parsed;
-    }
-    let result = parse_head_fields(input, line_end + 2, fields, limits);
+    var scan = HeadScan {
+    };
+    let result = scan_head(scan, input, limits);
     if result != HeadResult.Complete {
         return ParsedHead {
             result: result,
             ..
         };
     }
-    let policy = validate_get_fields(fields, parsed.http_minor);
-    if policy != HeadResult.Complete {
+    var parsed = parse_request_line(input[..scan.request_line_end]);
+    let headers = collect_head_fields(input[..scan.head_bytes], scan.header_section_start, fields, limits);
+    if headers != HeadResult.Complete {
+        fields.clear();
         return ParsedHead {
-            result: policy,
+            result: headers,
             ..
         };
     }
+    let framing = validate_head_fields(fields, parsed.http_minor);
+    if framing.result != HeadResult.Complete {
+        fields.clear();
+        return ParsedHead {
+            result: framing.result,
+            ..
+        };
+    }
+    parsed.head_bytes = scan.head_bytes;
+    parsed.framing = framing.kind;
+    parsed.content_length = framing.content_length;
     return parsed;
 }
 
-fn parse_get_line(line: u8[:]) -> ParsedHead {
-    let method_end = head_byte_index(line, ' ', 0);
-    if method_end <= 0 || !valid_header_name(line[..method_end]) {
-        return ParsedHead {
-        };
-    }
-    if line[..method_end] != "GET" {
-        return ParsedHead {
-            result: HeadResult.UnsupportedMethod,
-            ..
-        };
-    }
-    let target_end = head_byte_index(line, ' ', method_end + 1);
-    if target_end <= method_end + 1 {
-        return ParsedHead {
-        };
-    }
-    let target = line[method_end + 1..target_end];
-    if target[0] != '/' {
-        return ParsedHead {
-        };
-    }
-    for byte in target {
-        if byte <= 32 || byte == 127 || byte == '#' {
-            return ParsedHead {
-            };
-        }
-    }
-    let version = line[target_end + 1..];
-    if version != "HTTP/1.0" && version != "HTTP/1.1" {
-        return ParsedHead {
-            result: HeadResult.UnsupportedVersion,
-            ..
-        };
-    }
-    return ParsedHead {
-        result: HeadResult.Complete,
-        target: target,
-        http_minor: if version == "HTTP/1.0" {
-            0
-        } else {
-            1
-        },
-    };
-}
-
-fn parse_head_fields(input: u8[:], start: i64, fields: HeaderView[>..]&, limits: Limits) -> HeadResult {
+fn collect_head_fields(input: u8[:], start: i64, fields: HeaderView[>..]&, limits: Limits) -> HeadResult {
     var cursor = start;
     var remaining = limits.header_bytes_max;
-    while cursor < input.len {
+    while cursor < input.len - 2 {
         let end = head_line_end(input, cursor);
-        if end < 0 {
-            return HeadResult.BadRequest;
-        }
-        if end == cursor {
-            return if end + 2 == input.len {
-                HeadResult.Complete
-            } else {
-                HeadResult.BadRequest
-            };
-        }
         let line = input[cursor..end];
         let colon = head_byte_index(line, ':', 0);
-        if colon <= 0 || !valid_header_name(line[..colon]) || !valid_header_value(line[colon + 1..]) {
-            return HeadResult.BadRequest;
-        }
-        if fields.len >= limits.header_count_max || line.len - 1 > remaining {
+        if line.len - 1 > remaining {
             return HeadResult.HeaderLimit;
         }
         remaining -= line.len - 1;
@@ -170,78 +147,33 @@ fn parse_head_fields(input: u8[:], start: i64, fields: HeaderView[>..]&, limits:
             });
         cursor = end + 2;
     }
-    return HeadResult.BadRequest;
-}
-
-fn validate_get_fields(fields: HeaderView[:], http_minor: i32) -> HeadResult {
-    var hosts = 0;
-    var lengths = 0;
-    for field in fields {
-        if header_name_equal(field.name, "Host") {
-            hosts += 1;
-            if hosts > 1 || trim_head_space(field.value).len == 0 {
-                return HeadResult.BadRequest;
-            }
-        }
-        if header_name_equal(field.name, "Transfer-Encoding") || header_name_equal(field.name, "Expect") {
-            return HeadResult.UnsupportedBody;
-        }
-        if header_name_equal(field.name, "Content-Length") {
-            lengths += 1;
-            if lengths > 1 {
-                return HeadResult.BadRequest;
-            }
-            let length = trim_head_space(field.value);
-            if length.len == 0 {
-                return HeadResult.BadRequest;
-            }
-            for byte in length {
-                if byte < '0' || byte > '9' {
-                    return HeadResult.BadRequest;
-                }
-                if byte != '0' {
-                    return HeadResult.UnsupportedBody;
-                }
-            }
-        }
-    }
-    if http_minor == 1 && hosts != 1 {
-        return HeadResult.BadRequest;
-    }
     return HeadResult.Complete;
 }
 
-fn trim_head_space(value: u8[:]) -> const u8[:] {
-    var start = 0;
-    var end = value.len;
-    while start < end && (value[start] == ' ' || value[start] == '\t') {
-        start += 1;
+// Legacy exact-head/bodyless-GET adapter. Production head parsing uses parse_head directly.
+fn parse_get_head(input: u8[:], fields: HeaderView[>..]&, limits: Limits) -> ParsedHead {
+    var parsed = parse_head(input, fields, limits);
+    if parsed.result == HeadResult.NeedMore || parsed.result == HeadResult.Truncated {
+        parsed.result = HeadResult.BadRequest;
     }
-    while end > start && (value[end - 1] == ' ' || value[end - 1] == '\t') {
-        end -= 1;
+    if parsed.result != HeadResult.Complete {
+        return parsed;
     }
-    return value[start..end];
+    if parsed.head_bytes != input.len {
+        parsed.result = HeadResult.BadRequest;
+    } else if parsed.method != "GET" {
+        parsed.result = HeadResult.UnsupportedMethod;
+    } else if parsed.framing == BodyFraming.Chunked || parsed.content_length != 0
+        || find_header(fields, "Expect") >= 0 {
+        parsed.result = HeadResult.UnsupportedBody;
+    }
+    return parsed;
 }
 
 fn head_line_end(input: u8[:], start: i64) -> i64 {
     for index in start..input.len {
         if input[index] == '\n' {
-            if index > start && input[index - 1] == '\r' {
-                return index - 1;
-            }
-            return -1;
-        }
-        if input[index] == '\r' && index + 1 < input.len && input[index + 1] != '\n' {
-            return -1;
-        }
-    }
-    return -1;
-}
-
-fn head_byte_index(input: u8[:], byte: u8, start: i64) -> i64 {
-    for index in start..input.len {
-        if input[index] == byte {
-            return index;
+            return index - 1;
         }
     }
     return -1;

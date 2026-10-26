@@ -53,7 +53,7 @@ fn malformed_and_unsupported() {
     assert(parse_result("GET / HTTP/1.0\r\n\r\nbody") == silly::HeadResult.BadRequest);
     assert(parse_result("GET / HTTP/1.0\r\nContent-Length: -0\r\n\r\n") == silly::HeadResult.BadRequest);
     assert(parse_result("GET / HTTP/1.0\r\nContent-Length: 1\r\n\r\n") == silly::HeadResult.UnsupportedBody);
-    assert(parse_result("GET / HTTP/1.0\r\nTransfer-Encoding: chunked\r\n\r\n") == silly::HeadResult.UnsupportedBody);
+    assert(parse_result("GET / HTTP/1.0\r\nTransfer-Encoding: chunked\r\n\r\n") == silly::HeadResult.BadRequest);
     assert(parse_result("GET / HTTP/1.0\r\nExpect: 100-continue\r\n\r\n") == silly::HeadResult.UnsupportedBody);
     assert(parse_result("POST / HTTP/1.0\r\n\r\n") == silly::HeadResult.UnsupportedMethod);
     assert(parse_result("GET / HTTP/2.0\r\n\r\n") == silly::HeadResult.UnsupportedVersion);

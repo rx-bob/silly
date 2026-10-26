@@ -1,7 +1,7 @@
 // Fixed connection descriptors. Slabs are driver-owned; only lengths/offsets survive a turn.
 namespace silly;
 
-import.http_parser;
+import.http_head_types;
 import.transport;
 
 enum ConnectionPhase {

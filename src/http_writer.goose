@@ -100,6 +100,12 @@ fn response_reason(status: i32) -> const u8[:] {
     if status == 431 {
         return "Request Header Fields Too Large";
     }
+    if status == 414 {
+        return "URI Too Long";
+    }
+    if status == 505 {
+        return "HTTP Version Not Supported";
+    }
     if status == 500 {
         return "Internal Server Error";
     }

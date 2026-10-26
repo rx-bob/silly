@@ -4,6 +4,7 @@ namespace silly;
 import std;
 
 import.connection;
+import.http_head_types;
 import.http_parser;
 import.server_buffers;
 import.server_options;
@@ -21,16 +22,20 @@ fn read_connection<H>(connection: Connection&, input: u8[:], head: u8[:], body: 
     match result.status {
         Ready => {
             connection.input_bytes += result.count;
-            let scanned = scan_head(connection.scan, input[..connection.input_bytes], options.limits.head_bytes_max);
+            let scanned = scan_head(connection.scan, input[..connection.input_bytes], options.limits);
             if scanned == HeadResult.Complete {
                 build_reply(connection, input[..connection.scan.head_bytes], head, body, options, H);
             } else if scanned != HeadResult.NeedMore {
-                release_connection(connection);
+                build_head_error(connection, head, scanned);
             }
         },
         WouldBlock => {
         },
         Interrupted => {
+        },
+        Closed => {
+            finish_head(connection.scan);
+            release_connection(connection);
         },
         _ => {
             release_connection(connection);

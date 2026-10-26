@@ -6,6 +6,7 @@ import std;
 import.connection;
 import.context;
 import.headers;
+import.http_head_types;
 import.http_parser;
 import.http_writer;
 import.request;
@@ -25,7 +26,16 @@ checkfree fn copy_server_bytes(target: u8[:], source: u8[:]) {
 // All temporary handler views end here. Only copied head/body bytes survive in owning slabs.
 fn build_reply<H>(connection: Connection&, input: u8[:], head: u8[:], body: u8[:], options: ServerOptions) {
     var fields: HeaderView[>..] = [];
-    let parsed = parse_get_head(input, fields, options.limits);
+    let parsed = parse_head(input, fields, options.limits);
+    if parsed.result != HeadResult.Complete {
+        build_head_error(connection, head, parsed.result);
+        return;
+    }
+    if parsed.method != "GET" || parsed.framing == BodyFraming.Chunked || parsed.content_length != 0
+        || find_header(fields, "Expect") >= 0 {
+        build_head_error(connection, head, HeadResult.UnsupportedBody);
+        return;
+    }
     var response_fields: HeaderField[>..] = [];
     var response_headers: u8[>..] = [];
     var output: u8[>..] = [];
@@ -37,9 +47,9 @@ fn build_reply<H>(connection: Connection&, input: u8[:], head: u8[:], body: u8[:
         output: output,
         ..
     };
-    if parsed.result == HeadResult.Complete {
+    {
         let request = Request {
-            method: "GET",
+            method: parsed.method,
             target: parsed.target,
             headers: fields,
             ..
@@ -52,9 +62,6 @@ fn build_reply<H>(connection: Connection&, input: u8[:], head: u8[:], body: u8[:
             app: app
         };
         H(ctx);
-    } else {
-        begin_response(response, 400);
-        prepare_response(response);
     }
     if response.phase != ResponsePhase.Prepared {
         build_failure(connection, head);
@@ -69,6 +76,17 @@ fn build_reply<H>(connection: Connection&, input: u8[:], head: u8[:], body: u8[:
     copy_server_bytes(body, output);
     connection.head_bytes = wire.len;
     connection.body_bytes = output.len;
+    connection.phase = ConnectionPhase.Writing;
+}
+
+fn build_head_error(connection: Connection&, head: u8[:], result: HeadResult) {
+    let status = head_status(result);
+    assert(status >= 400);
+    let bytes = str("HTTP/1.1 ", status, " ", response_reason(status),
+        "\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+    copy_server_bytes(head, bytes);
+    connection.head_bytes = bytes.len;
+    connection.body_bytes = 0;
     connection.phase = ConnectionPhase.Writing;
 }
 
