@@ -40,3 +40,7 @@ Its handler clears its local inline state after handoff; producer steps later ob
 the retained owned copy. Runtime continuation and queue tests separately prove terminal
 cleanup, generation rejection and targeted delivery; the compile-negative tests are not
 a substitute for those state-machine assertions.
+
+E3.S1 adds `route_plan_clear_rejected.goose` (diagnostic `cannot clear bytes`) and
+`route_plan_mutation_rejected.goose` (`cannot assign through this path`). These prove
+retained inventory ownership and const prepared entry access in both compiler modes.

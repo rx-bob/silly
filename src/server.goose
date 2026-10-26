@@ -1,17 +1,34 @@
-// Minimal buffered server. Later router/serve adapters use this owner/transport path.
+// Buffered single-owner transport shared by direct callbacks and prepared route dispatch.
 namespace silly;
 
 import std;
 
 import.connection;
+import.server_buffers;
 import.server_loop;
 import.server_options;
+import.state;
 import.transport;
 
 // Consumes listener and wake reader on every path; caller must relinquish its descriptor copies.
 // A wake byte or closed wake peer requests immediate cancellation, not E6's graceful drain.
 fn run_server<H>(options: ServerOptions, listener: silly_transport::Descriptor,
     wake: silly_transport::Descriptor) -> ServerResult {
+    var driver = NoState {
+    };
+    return run_server_state(options, listener, wake, driver) {
+        state,
+        ctx =>
+        if ctx.request.method != "GET" {
+            empty_reply(ctx, 501);
+        } else {
+            H(ctx);
+        }
+    };
+}
+
+fn run_server_state<D, H>(options: ServerOptions, listener: silly_transport::Descriptor,
+    wake: silly_transport::Descriptor, driver: D&) -> ServerResult {
     var owned_listener = listener;
     var owned_wake = wake;
     if !valid_server_options(options) || listener.fd < 0 || wake.fd < 0 || listener.fd == wake.fd {
@@ -50,7 +67,7 @@ fn run_server<H>(options: ServerOptions, listener: silly_transport::Descriptor,
         interests: interests,
         events: events,
     };
-    let result = server_loop(storage, options, owned_listener, owned_wake, H);
+    let result = server_loop(storage, options, owned_listener, owned_wake, driver, H);
     for &connection in connections {
         release_connection(connection);
     }
@@ -60,7 +77,7 @@ fn run_server<H>(options: ServerOptions, listener: silly_transport::Descriptor,
 }
 
 // Initial low-level entry point: handles each admitted GET with one static callback.
-// Startup Router<R> and the target serve<R> overloads are added by E3, not emulated here.
+// Prepared Router<R> applications use serve<R> in route_server.goose.
 fn serve_buffered<H>(options: ServerOptions) -> ServerResult {
     if !valid_server_options(options) {
         return ServerResult {

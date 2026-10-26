@@ -24,14 +24,15 @@ checkfree fn copy_server_bytes(target: u8[:], source: u8[:]) {
 }
 
 // All temporary handler views end here. Only copied head/body bytes survive in owning slabs.
-fn build_reply<H>(connection: Connection&, input: u8[:], head: u8[:], body: u8[:], options: ServerOptions) {
+fn build_reply<D, H>(connection: Connection&, input: u8[:], head: u8[:], body: u8[:],
+    options: ServerOptions, driver: D&) {
     var fields: HeaderView[>..] = [];
     let parsed = parse_head(input, fields, options.limits);
     if parsed.result != HeadResult.Complete {
         build_head_error(connection, head, parsed.result);
         return;
     }
-    if parsed.method != "GET" || parsed.framing == BodyFraming.Chunked || parsed.content_length != 0
+    if parsed.framing == BodyFraming.Chunked || parsed.content_length != 0
         || find_header(fields, "Expect") >= 0 {
         build_head_error(connection, head, HeadResult.UnsupportedBody);
         return;
@@ -61,7 +62,7 @@ fn build_reply<H>(connection: Connection&, input: u8[:], head: u8[:], body: u8[:
             response: response,
             app: app
         };
-        H(ctx);
+        H(driver, ctx);
     }
     if response.phase != ResponsePhase.Prepared {
         build_failure(connection, head);
@@ -75,7 +76,11 @@ fn build_reply<H>(connection: Connection&, input: u8[:], head: u8[:], body: u8[:
     copy_server_bytes(head, wire);
     copy_server_bytes(body, output);
     connection.head_bytes = wire.len;
-    connection.body_bytes = output.len;
+    connection.body_bytes = if parsed.method == "HEAD" {
+        0
+    } else {
+        output.len
+    };
     connection.phase = ConnectionPhase.Writing;
 }
 
@@ -96,4 +101,10 @@ fn build_failure(connection: Connection&, head: u8[:]) {
     connection.head_bytes = bytes.len;
     connection.body_bytes = 0;
     connection.phase = ConnectionPhase.Writing;
+}
+
+fn empty_reply(ctx: BufferedContext&, status: i32) {
+    if begin_response(ctx.response, status) == ResponseError.None {
+        prepare_response(ctx.response);
+    }
 }

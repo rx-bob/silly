@@ -10,7 +10,8 @@ import.server_buffers;
 import.server_options;
 import.transport;
 
-fn read_connection<H>(connection: Connection&, input: u8[:], head: u8[:], body: u8[:], options: ServerOptions) {
+fn read_connection<D, H>(connection: Connection&, input: u8[:], head: u8[:], body: u8[:],
+    options: ServerOptions, driver: D&) {
     let space = input.len - connection.input_bytes;
     if space == 0 {
         release_connection(connection);
@@ -24,7 +25,7 @@ fn read_connection<H>(connection: Connection&, input: u8[:], head: u8[:], body: 
             connection.input_bytes += result.count;
             let scanned = scan_head(connection.scan, input[..connection.input_bytes], options.limits);
             if scanned == HeadResult.Complete {
-                build_reply(connection, input[..connection.scan.head_bytes], head, body, options, H);
+                build_reply(connection, input[..connection.scan.head_bytes], head, body, options, driver, H);
             } else if scanned != HeadResult.NeedMore {
                 build_head_error(connection, head, scanned);
             }

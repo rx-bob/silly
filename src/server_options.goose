@@ -2,6 +2,7 @@
 namespace silly;
 
 import.limits;
+import.route_types;
 import.transport;
 
 struct ServerOptions {
@@ -16,6 +17,8 @@ struct ServerOptions {
     accepts_per_turn: i64 = 16,
     idle_timeout_ms: i64 = 30000,
     poll_timeout_ms: i32 = 100,
+    route_limits: RouteLimits = RouteLimits {
+    },
 }
 
 enum ServerError {
@@ -26,6 +29,7 @@ enum ServerError {
     Wake,
     Clock,
     Poll,
+    Routes,
 }
 
 struct ServerResult {
@@ -33,6 +37,8 @@ struct ServerResult {
     error: ServerError = ServerError.None,
     message: const u8[:] = "",
     system_error: i32 = 0,
+    route_issue: RouteIssue = RouteIssue {
+    },
 }
 
 fn valid_server_options(options: ServerOptions) -> bool {
