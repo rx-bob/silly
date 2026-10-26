@@ -2,6 +2,7 @@
 namespace silly;
 
 import.request;
+import.request_headers;
 import.response;
 import.stream_contract;
 
@@ -53,6 +54,15 @@ fn header<A, S>(ctx: Context<A, S> & , name: u8[:]) -> FieldValue {
 
 fn header_raw<A, S>(ctx: Context<A, S> & , name: u8[:]) -> FieldValue {
     return header_raw(ctx.request, name);
+}
+
+fn header_wire<A, S>(ctx: Context<A, S> & , name: u8[:]) -> FieldValue {
+    return header_wire(ctx.request, name);
+}
+
+fn header_values<A, S>(ctx: Context<A, S> & , name: u8[:],
+    mode: HeaderValueMode = HeaderValueMode.Trimmed) -> HeaderValues {
+    return header_values(ctx.request, name, mode);
 }
 
 fn body_view<A, S>(ctx: Context<A, S> & ) -> BodyView {

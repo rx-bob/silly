@@ -1,6 +1,7 @@
 // Immutable metadata borrowing driver-owned request head and decoded body storage.
 namespace silly;
 
+import.header_index;
 import.headers;
 import.limits;
 
@@ -32,6 +33,7 @@ struct Request {
     method: const u8[:],
     target: const u8[:],
     headers: const HeaderView[:] = EMPTY_REQUEST_HEADERS,
+    header_index: const HeaderIndexEntry[:] = EMPTY_HEADER_INDEX,
     body_state: RequestBody = RequestBody.Buffered {
         bytes: ""
     },
@@ -116,40 +118,4 @@ fn body_view(request: Request) -> BodyView {
             };
         },
     }
-}
-
-fn header_raw(request: Request, name: u8[:]) -> FieldValue {
-    let index = find_header(request.headers, name);
-    if index < 0 {
-        return FieldValue {
-        };
-    }
-    let value = request.headers[index].value;
-    var start = 0;
-    for byte in value {
-        if byte != ' ' && byte != '\t' {
-            break;
-        }
-        start += 1;
-    }
-    return FieldValue {
-        present: true,
-        value: value[start..]
-    };
-}
-
-fn header(request: Request, name: u8[:]) -> FieldValue {
-    let field = header_raw(request, name);
-    var end = field.value.len;
-    while end > 0 {
-        let byte = field.value[end - 1];
-        if byte != ' ' && byte != '\t' {
-            break;
-        }
-        end -= 1;
-    }
-    return FieldValue {
-        present: field.present,
-        value: field.value[..end]
-    };
 }

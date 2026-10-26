@@ -5,6 +5,7 @@ import std;
 
 import.connection;
 import.context;
+import.header_index;
 import.headers;
 import.http_head_types;
 import.http_parser;
@@ -27,7 +28,8 @@ checkfree fn copy_server_bytes(target: u8[:], source: u8[:]) {
 fn build_reply<D, H>(connection: Connection&, input: u8[:], head: u8[:], body: u8[:],
     options: ServerOptions, driver: D&) {
     var fields: HeaderView[>..] = [];
-    let parsed = parse_head(input, fields, options.limits);
+    var index: HeaderIndexEntry[>..] = [];
+    let parsed = parse_head(input, fields, index, options.limits);
     if parsed.result != HeadResult.Complete {
         build_head_error(connection, head, parsed.result);
         return;
@@ -53,6 +55,7 @@ fn build_reply<D, H>(connection: Connection&, input: u8[:], head: u8[:], body: u
             method: parsed.method,
             target: parsed.target,
             headers: fields,
+            header_index: index,
             ..
         };
         var app = NoState {

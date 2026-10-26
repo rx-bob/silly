@@ -1,6 +1,7 @@
 // Incremental HTTP head scanner. Errors are sticky; only complete validated heads expose views.
 namespace silly;
 
+import.header_index;
 import.headers;
 import.http_head_types;
 import.http_headers;
@@ -94,7 +95,13 @@ fn finish_head_line(scan: HeadScan&, input: u8[:], limits: Limits) -> HeadResult
 
 // Bytes after head_bytes are untouched and remain available to the next protocol stage.
 fn parse_head(input: u8[:], fields: HeaderView[>..]&, limits: Limits) -> ParsedHead {
-    if fields.len != 0 {
+    var index: HeaderIndexEntry[>..] = [];
+    return parse_head(input, fields, index, limits);
+}
+
+// Both output owners must be empty; the index borrows no bytes and retains source offsets.
+fn parse_head(input: u8[:], fields: HeaderView[>..]&, index: HeaderIndexEntry[>..]&, limits: Limits) -> ParsedHead {
+    if fields.len != 0 || index.len != 0 {
         return ParsedHead {
         };
     }
@@ -108,9 +115,10 @@ fn parse_head(input: u8[:], fields: HeaderView[>..]&, limits: Limits) -> ParsedH
         };
     }
     var parsed = parse_request_line(input[..scan.request_line_end]);
-    let headers = collect_head_fields(input[..scan.head_bytes], scan.header_section_start, fields, limits);
+    let headers = collect_head_fields(input[..scan.head_bytes], scan.header_section_start, fields, index, limits);
     if headers != HeadResult.Complete {
         fields.clear();
+        index.clear();
         return ParsedHead {
             result: headers,
             ..
@@ -119,6 +127,7 @@ fn parse_head(input: u8[:], fields: HeaderView[>..]&, limits: Limits) -> ParsedH
     let framing = validate_head_fields(fields, parsed.http_minor);
     if framing.result != HeadResult.Complete {
         fields.clear();
+        index.clear();
         return ParsedHead {
             result: framing.result,
             ..
@@ -130,7 +139,8 @@ fn parse_head(input: u8[:], fields: HeaderView[>..]&, limits: Limits) -> ParsedH
     return parsed;
 }
 
-fn collect_head_fields(input: u8[:], start: i64, fields: HeaderView[>..]&, limits: Limits) -> HeadResult {
+fn collect_head_fields(input: u8[:], start: i64, fields: HeaderView[>..]&, index: HeaderIndexEntry[>..]&,
+    limits: Limits) -> HeadResult {
     var cursor = start;
     var remaining = limits.header_bytes_max;
     while cursor < input.len - 2 {
@@ -144,6 +154,12 @@ fn collect_head_fields(input: u8[:], start: i64, fields: HeaderView[>..]&, limit
         fields.push(HeaderView {
                 name: line[..colon],
                 value: line[colon + 1..]
+            });
+        index_header(index, fields, fields.len - 1, HeaderField {
+                name_start: cursor,
+                name_bytes: colon,
+                value_start: cursor + colon + 1,
+                value_bytes: end - cursor - colon - 1,
             });
         cursor = end + 2;
     }

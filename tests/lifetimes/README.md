@@ -44,3 +44,9 @@ a substitute for those state-machine assertions.
 E3.S1 adds `route_plan_clear_rejected.goose` (diagnostic `cannot clear bytes`) and
 `route_plan_mutation_rejected.goose` (`cannot assign through this path`). These prove
 retained inventory ownership and const prepared entry access in both compiler modes.
+
+E4.S1 adds `header_value_reset_rejected.goose` and
+`header_iterator_reset_rejected.goose` (diagnostic `cannot clear bytes`), plus
+`header_index_reset_rejected.goose` (`cannot clear index`). Each uses the retained value
+or cursor after the attempted reset. `indexed_header_test.goose` exercises legal reset
+after final use and fresh parsing with the reused byte owner.
