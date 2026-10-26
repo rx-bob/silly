@@ -16,6 +16,11 @@ enum ResponsePhase {
     Failed,
 }
 
+enum ResponseBodyMode {
+    Buffered,
+    Stream,
+}
+
 enum ResponseError {
     None,
     InvalidLimits,
@@ -42,6 +47,7 @@ struct Response {
     status: i32 = 0,
     error: ResponseError = ResponseError.None,
     sent_bytes: i64 = 0,
+    mode: ResponseBodyMode = ResponseBodyMode.Buffered,
 }
 
 fn begin_response(response: Response&, status: i32) -> ResponseError {

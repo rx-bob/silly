@@ -8,6 +8,9 @@ import.response;
 
 // No output mutation or commitment occurs on failure. Caller commits only after success.
 fn write_response_head(out: u8[>..]&, response: Response&, http_minor: i32, cap: i64) -> ResponseError {
+    if response.mode != ResponseBodyMode.Buffered {
+        return ResponseError.InvalidState;
+    }
     if response.phase != ResponsePhase.Prepared || out.len != 0 || (http_minor != 0 && http_minor != 1) {
         return ResponseError.InvalidState;
     }

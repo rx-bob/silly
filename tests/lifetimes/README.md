@@ -1,4 +1,4 @@
-# E1.S2 compiler lifetime fixtures
+# E1 compiler lifetime and ownership fixtures
 
 These are compiler contract tests. Files ending in `_rejected.goose` must fail
 `goose check`; a failed import or syntax error does not count as a passing test.
@@ -11,6 +11,9 @@ Run each fixture independently so one rejection cannot hide another.
 | `output_clear_rejected.goose` | Failure containing `cannot clear output` and `transport_view is still used`. |
 | `local_escape_rejected.goose` | Failure containing `returning a reference rooted in bytes, which dies with this function`. |
 | `immutable_request_rejected.goose` | Failure containing `cannot assign through this path`. |
+| `stream_state_escape_rejected.goose` | Failure containing `storing a reference rooted at state, which does not outlive the destination`. A fixed-size struct cannot smuggle handler-local views into a stream sink. |
+| `resizable_stream_rejected.goose` | Failure containing `default<T>() needs a fixed-size type`. Explicitly initializing the sink's state cannot bypass the fixed-size check in `start_stream`. |
+| `borrowed_queue_rejected.goose` | Failure containing `queue elements must be flat`. Cross-thread messages cannot retain borrowed slice addresses. |
 
 Example, from the repository root:
 
@@ -29,3 +32,11 @@ an older view is live; its existing bytes remain valid. Clearing or shrinking
 that owner while the view is still needed is rejected. Response commitment and
 transport acknowledgement additionally require runtime lifecycle checks; compiler
 lifetimes alone do not prove those protocol states.
+
+E1.S4 extends these checks to stream handoff and cross-thread messages. The positive
+`tests/api_contract_test.goose` proves real Context/StreamStart ownership with the exact
+three target callback overload shapes through clearly labeled proof-local adapters.
+Its handler clears its local inline state after handoff; producer steps later observe
+the retained owned copy. Runtime continuation and queue tests separately prove terminal
+cleanup, generation rejection and targeted delivery; the compile-negative tests are not
+a substitute for those state-machine assertions.

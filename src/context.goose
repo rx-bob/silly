@@ -3,11 +3,34 @@ namespace silly;
 
 import.request;
 import.response;
+import.stream_contract;
 
 struct Context<A, S> {
     request: const Request&,
     response: Response&,
     app: A&,
+    stream_start: StreamStart<S>? = null,
+}
+
+fn start_stream<A, S>(ctx: Context<A, S> & , status: i32, state: S) -> ResponseError {
+    let pending = ctx.stream_start;
+    guard pending else {
+        return ResponseError.InvalidState;
+    }
+    if pending.selected {
+        return ResponseError.AlreadyStarted;
+    }
+    let result = begin_response(ctx.response, status);
+    if result != ResponseError.None {
+        return result;
+    }
+    // default<S> enforces fixed-size S even when callers explicitly initialized the sink.
+    var owned: S = default<S>();
+    owned = state;
+    pending.state = owned;
+    pending.selected = true;
+    ctx.response.mode = ResponseBodyMode.Stream;
+    return prepare_response(ctx.response);
 }
 
 enum RouteSelection {

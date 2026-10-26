@@ -21,7 +21,7 @@ struct MemoryTransport {
 }
 
 fn drain_memory(transport: MemoryTransport&, response: Response&, allowance: i64) -> DrainResult {
-    if response.phase != ResponsePhase.Committed {
+    if response.phase != ResponsePhase.Committed || response.mode != ResponseBodyMode.Buffered {
         return DrainResult.InvalidState;
     }
     if transport.disconnected || transport.capacity < transport.bytes.len || allowance < 0 {
