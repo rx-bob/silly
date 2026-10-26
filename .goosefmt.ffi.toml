@@ -1,0 +1,29 @@
+# Use only for src/transport.goose: G015 misclassifies writable FFI output slices.
+# All other guide rules remain enabled. Read-only FFI inputs still require const.
+[format]
+indent_width = 4
+final_newline = true
+
+[lint]
+max_line_length = 120
+max_file_lines = 500
+max_function_parameters = 6
+max_function_returns = 3
+max_function_lines = 70
+indentation = true
+spacing = true
+one_statement_per_line = true
+line_length = true
+final_newline = true
+naming = true
+signature_size = true
+file_length = true
+import_order = true
+redundant_condition_parens = true
+function_length = true
+extern_const_slice = false
+const_global_naming = true
+reference_bind_push = true
+split_compound_assert = true
+bounded_control_flow = true
+strict_safety = false
