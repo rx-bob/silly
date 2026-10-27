@@ -4,6 +4,7 @@ namespace silly;
 import std;
 
 import.connection;
+import.response_errors;
 import.server_buffers;
 import.server_loop;
 import.server_options;
@@ -14,9 +15,14 @@ import.transport;
 // A wake byte or closed wake peer requests immediate cancellation, not E6's graceful drain.
 fn run_server<H>(options: ServerOptions, listener: silly_transport::Descriptor,
     wake: silly_transport::Descriptor) -> ServerResult {
+    return run_server_with_errors(options, listener, wake, H, default_response_error);
+}
+
+fn run_server_with_errors<H, E>(options: ServerOptions, listener: silly_transport::Descriptor,
+    wake: silly_transport::Descriptor) -> ServerResult {
     var driver = NoState {
     };
-    return run_server_state(options, listener, wake, driver) {
+    return run_server_state_with_errors(options, listener, wake, driver, E) {
         state,
         ctx =>
         if ctx.request.method != "GET" {
@@ -28,6 +34,11 @@ fn run_server<H>(options: ServerOptions, listener: silly_transport::Descriptor,
 }
 
 fn run_server_state<D, H>(options: ServerOptions, listener: silly_transport::Descriptor,
+    wake: silly_transport::Descriptor, driver: D&) -> ServerResult {
+    return run_server_state_with_errors(options, listener, wake, driver, default_response_error, H);
+}
+
+fn run_server_state_with_errors<D, E, H>(options: ServerOptions, listener: silly_transport::Descriptor,
     wake: silly_transport::Descriptor, driver: D&) -> ServerResult {
     var owned_listener = listener;
     var owned_wake = wake;
@@ -73,7 +84,7 @@ fn run_server_state<D, H>(options: ServerOptions, listener: silly_transport::Des
         interests: interests,
         events: events,
     };
-    let result = server_loop(storage, options, owned_listener, owned_wake, driver, H);
+    let result = server_loop(storage, options, owned_listener, owned_wake, driver, H, E);
     for &connection in connections {
         release_connection(connection);
     }
@@ -85,6 +96,10 @@ fn run_server_state<D, H>(options: ServerOptions, listener: silly_transport::Des
 // Initial low-level entry point: handles each admitted GET with one static callback.
 // Prepared Router<R> applications use serve<R> in route_server.goose.
 fn serve_buffered<H>(options: ServerOptions) -> ServerResult {
+    return serve_buffered_with_errors(options, H, default_response_error);
+}
+
+fn serve_buffered_with_errors<H, E>(options: ServerOptions) -> ServerResult {
     if !valid_server_options(options) {
         return ServerResult {
             ok: false,
@@ -112,7 +127,7 @@ fn serve_buffered<H>(options: ServerOptions) -> ServerResult {
             system_error: wake.error
         };
     }
-    let result = run_server(options, listener.descriptor, wake.reader, H);
+    let result = run_server_with_errors(options, listener.descriptor, wake.reader, H, E);
     silly_transport::close(wake.writer);
     return result;
 }

@@ -21,7 +21,7 @@ struct ServerStorage {
     events: i32[:],
 }
 
-fn server_loop<D, H>(storage: ServerStorage&, options: ServerOptions,
+fn server_loop<D, H, E>(storage: ServerStorage&, options: ServerOptions,
     listener: silly_transport::Descriptor, wake: silly_transport::Descriptor, driver: D&) -> ServerResult {
     var running = true;
     while running {
@@ -73,7 +73,7 @@ fn server_loop<D, H>(storage: ServerStorage&, options: ServerOptions,
                 };
             }
         }
-        service_connections(storage, options, clock.count, driver, H);
+        service_connections(storage, options, clock.count, driver, H, E);
     }
     return ServerResult {
         ok: true,
@@ -146,7 +146,7 @@ fn accept_connections(connections: Connection[:], listener: silly_transport::Des
     };
 }
 
-fn service_connections<D, H>(storage: ServerStorage&, options: ServerOptions, now: i64, driver: D&) {
+fn service_connections<D, H, E>(storage: ServerStorage&, options: ServerOptions, now: i64, driver: D&) {
     for index in storage.connections.len {
         let connection .= storage.connections[index];
         if connection.phase == ConnectionPhase.Free {
@@ -166,7 +166,7 @@ fn service_connections<D, H>(storage: ServerStorage&, options: ServerOptions, no
         let output_before = connection.head_sent + connection.body_sent;
         let phase_before = connection.phase;
         if connection.phase == ConnectionPhase.Reading || connection.phase == ConnectionPhase.ReadingBody {
-            read_connection(connection, buffers, options, driver, H);
+            read_connection(connection, buffers, options, driver, H, E);
         } else {
             write_connection(connection, buffers.head, buffers.body, options.work_bytes_per_turn);
         }

@@ -10,14 +10,17 @@ import.header_index;
 import.headers;
 import.http_head_types;
 import.http_parser;
+import.http_writer;
+import.response;
 import.server_body;
 import.server_buffers;
 import.server_options;
 import.transport;
+import.wire_transfer;
 
-fn read_connection<D, H>(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions, driver: D&) {
+fn read_connection<D, H, E>(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions, driver: D&) {
     if connection.phase == ConnectionPhase.ReadingBody {
-        read_request_body(connection, buffers, options, driver, H);
+        read_request_body(connection, buffers, options, driver, H, E);
         return;
     }
     let space = buffers.input.len - connection.input_bytes;
@@ -35,7 +38,7 @@ fn read_connection<D, H>(connection: Connection&, buffers: ConnectionBuffers, op
         if scanned == HeadResult.Complete {
             begin_request_body(connection, buffers, options, driver);
             if connection.phase == ConnectionPhase.ReadingBody {
-                consume_request_body(connection, buffers, options, driver, H);
+                consume_request_body(connection, buffers, options, driver, H, E);
             }
         } else if scanned != HeadResult.NeedMore {
             build_head_error(connection, buffers.head, scanned);
@@ -57,6 +60,7 @@ fn begin_request_body<D>(connection: Connection&, buffers: ConnectionBuffers, op
         build_head_error(connection, buffers.head, parsed.result);
         return;
     }
+    connection.http_minor = parsed.http_minor;
     let cap = min(options.limits.body_bytes_max, options.body_limits.bytes_max);
     let admission = body_admission(driver, parsed, cap);
     let expectation = request_expectation(fields);
@@ -81,7 +85,13 @@ fn begin_request_body<D>(connection: Connection&, buffers: ConnectionBuffers, op
     connection.staged_read = 0;
     connection.phase = ConnectionPhase.ReadingBody;
     if expectation == 100 && parsed.http_minor == 1 && connection.reader.status != BodyStatus.Complete {
-        let interim = "HTTP/1.1 100 Continue\r\n\r\n";
+        var interim: u8[>..] = [];
+        const interim_fields: HeaderView[0] = [];
+        let error = write_informational_head(interim, 100, interim_fields, parsed.http_minor, buffers.head.len);
+        if error != ResponseError.None {
+            build_failure(connection, buffers.head, parsed.http_minor);
+            return;
+        }
         copy_server_bytes(buffers.head, interim);
         connection.head_bytes = interim.len;
         connection.head_sent = 0;
@@ -90,9 +100,9 @@ fn begin_request_body<D>(connection: Connection&, buffers: ConnectionBuffers, op
     }
 }
 
-fn read_request_body<D, H>(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions, driver: D&) {
+fn read_request_body<D, H, E>(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions, driver: D&) {
     if connection.staged_read < connection.staged_bytes {
-        consume_request_body(connection, buffers, options, driver, H);
+        consume_request_body(connection, buffers, options, driver, H, E);
         return;
     }
     let result = silly_transport::read(connection.socket, buffers.staging);
@@ -100,7 +110,7 @@ fn read_request_body<D, H>(connection: Connection&, buffers: ConnectionBuffers, 
         connection.staged_read = 0;
         connection.staged_bytes = result.count;
         connection.received_bytes += result.count;
-        consume_request_body(connection, buffers, options, driver, H);
+        consume_request_body(connection, buffers, options, driver, H, E);
     } else if result.status == silly_transport::IoStatus.Closed {
         finish_body(connection.reader);
         release_connection(connection);
@@ -110,7 +120,7 @@ fn read_request_body<D, H>(connection: Connection&, buffers: ConnectionBuffers, 
     }
 }
 
-fn consume_request_body<D, H>(connection: Connection&, buffers: ConnectionBuffers,
+fn consume_request_body<D, H, E>(connection: Connection&, buffers: ConnectionBuffers,
     options: ServerOptions, driver: D&) {
     let input = buffers.staging[connection.staged_read..connection.staged_bytes];
     let output = buffers.request[connection.request_bytes..];
@@ -118,7 +128,7 @@ fn consume_request_body<D, H>(connection: Connection&, buffers: ConnectionBuffer
     connection.staged_read += result.consumed;
     connection.request_bytes += result.produced;
     if result.status == BodyStatus.Complete {
-        build_reply(connection, buffers, options, driver, H);
+        build_reply(connection, buffers, options, driver, H, E);
     } else if result.status != BodyStatus.NeedInput && result.status != BodyStatus.Progress {
         build_status_error(connection, buffers.head,
             if result.status == BodyStatus.NeedOutput {
@@ -130,32 +140,28 @@ fn consume_request_body<D, H>(connection: Connection&, buffers: ConnectionBuffer
 }
 
 fn write_connection(connection: Connection&, head: u8[:], body: u8[:], budget: i64) {
-    let head_count = min(connection.head_bytes - connection.head_sent, budget);
-    let body_count = min(connection.body_bytes - connection.body_sent, budget - head_count);
-    let result = silly_transport::write_parts(connection.socket,
-        head[connection.head_sent..connection.head_sent + head_count],
-        body[connection.body_sent..connection.body_sent + body_count]);
-    match result.status {
-        Ready => {
-            let consumed_head = min(result.count, head_count);
-            connection.head_sent += consumed_head;
-            connection.body_sent += result.count - consumed_head;
-            if connection.head_sent == connection.head_bytes && connection.body_sent == connection.body_bytes {
-                if connection.phase == ConnectionPhase.Continue {
-                    connection.phase = ConnectionPhase.ReadingBody;
-                    connection.head_bytes = 0;
-                    connection.head_sent = 0;
-                } else {
-                    release_connection(connection);
-                }
-            }
-        },
-        WouldBlock => {
-        },
-        Interrupted => {
-        },
-        _ => {
+    var cursor = WireCursor {
+        prefix_sent: connection.head_sent,
+        payload_sent: connection.body_sent,
+        ..
+    };
+    let parts = WireParts {
+        prefix: head[..connection.head_bytes],
+        payload: body[..connection.body_bytes],
+        ..
+    };
+    let result = write_wire(connection.socket, cursor, parts, budget);
+    connection.head_sent = cursor.prefix_sent;
+    connection.body_sent = cursor.payload_sent;
+    if result.status == WireStatus.Complete {
+        if connection.phase == ConnectionPhase.Continue {
+            connection.phase = ConnectionPhase.ReadingBody;
+            connection.head_bytes = 0;
+            connection.head_sent = 0;
+        } else {
             release_connection(connection);
-        },
+        }
+    } else if result.status == WireStatus.Failed || result.status == WireStatus.InvalidState {
+        release_connection(connection);
     }
 }

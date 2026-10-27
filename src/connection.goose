@@ -25,6 +25,7 @@ struct Connection {
     staged_bytes: i64 = 0,
     staged_read: i64 = 0,
     received_bytes: i64 = 0,
+    http_minor: i32 = 1,
     reader: BodyReader = BodyReader {
     },
     head_bytes: i64 = 0,

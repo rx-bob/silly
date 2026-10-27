@@ -3,6 +3,7 @@ namespace silly;
 
 import std;
 
+import.response_errors;
 import.route_match;
 import.route_plan;
 import.route_types;
@@ -13,6 +14,10 @@ import.server_options;
 import.transport;
 
 fn serve<R, D, H>(options: ServerOptions) -> ServerResult {
+    return serve_with_errors<R>(options, D, H, default_response_error);
+}
+
+fn serve_with_errors<R, D, H, E>(options: ServerOptions) -> ServerResult {
     if !valid_server_options(options) {
         return ServerResult {
             ok: false,
@@ -36,7 +41,7 @@ fn serve<R, D, H>(options: ServerOptions) -> ServerResult {
     if plan.issue.error != RouteError.None {
         return route_failure(plan.issue);
     }
-    return serve_prepared(options, plan, H);
+    return serve_prepared_with_errors(options, plan, H, E);
 }
 
 fn route_failure(issue: RouteIssue) -> ServerResult {
@@ -50,6 +55,10 @@ fn route_failure(issue: RouteIssue) -> ServerResult {
 }
 
 fn serve_prepared<R, H>(options: ServerOptions, plan: RoutePlan<R>) -> ServerResult {
+    return serve_prepared_with_errors(options, plan, H, default_response_error);
+}
+
+fn serve_prepared_with_errors<R, H, E>(options: ServerOptions, plan: RoutePlan<R>) -> ServerResult {
     if !valid_server_options(options) {
         return ServerResult {
             ok: false,
@@ -82,13 +91,18 @@ fn serve_prepared<R, H>(options: ServerOptions, plan: RoutePlan<R>) -> ServerRes
             ..
         };
     }
-    let result = run_prepared_server(options, listener.descriptor, wake.reader, plan, H);
+    let result = run_prepared_server_with_errors(options, listener.descriptor, wake.reader, plan, H, E);
     silly_transport::close(wake.writer);
     return result;
 }
 
 // Like run_server, consumes listener and wake; the caller retains immutable plan owners.
 fn run_prepared_server<R, H>(options: ServerOptions, listener: silly_transport::Descriptor,
+    wake: silly_transport::Descriptor, plan: RoutePlan<R>) -> ServerResult {
+    return run_prepared_server_with_errors(options, listener, wake, plan, H, default_response_error);
+}
+
+fn run_prepared_server_with_errors<R, H, E>(options: ServerOptions, listener: silly_transport::Descriptor,
     wake: silly_transport::Descriptor, plan: RoutePlan<R>) -> ServerResult {
     var driver = plan;
     if plan.issue.error != RouteError.None {
@@ -100,7 +114,7 @@ fn run_prepared_server<R, H>(options: ServerOptions, listener: silly_transport::
         }
         return route_failure(plan.issue);
     }
-    return run_server_state(options, listener, wake, driver) {
+    return run_server_state_with_errors(options, listener, wake, driver, E) {
         routes,
         ctx => dispatch_route(routes, ctx, H)
     };
