@@ -29,6 +29,10 @@ extern int64_t silly_files_stop(int64_t);
 extern int64_t silly_files_finish(int64_t);
 extern int64_t silly_files_pending(int64_t);
 extern int64_t silly_files_random(files_bytes);
+extern int64_t silly_files_static_open(int64_t, int32_t, files_bytes, int32_t, int64_t);
+extern int64_t silly_files_static_info(int64_t, int64_t);
+extern int64_t silly_files_list(int64_t, int64_t, int64_t, int64_t);
+extern int64_t silly_files_listing(int64_t, int64_t, files_bytes);
 
 static pthread_mutex_t hook_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t hook_changed = PTHREAD_COND_INITIALIZER;
@@ -275,14 +279,18 @@ static void symlink_race(int64_t epoch, int32_t root) {
     path(live, sizeof live, root_path, "race");
     assert(unlink(live) == 0);
 }
-static void pending_cancel(int32_t root) {
+static void pending_cancel(int32_t root, int directory) {
     int64_t epoch = silly_files_start(1, 1, 257);
     assert(epoch > 0);
-    int64_t token = open_file(epoch, root, "binary");
+    int64_t token = directory ? silly_files_static_open(epoch, root, bytes(""), 0, 0)
+        : open_file(epoch, root, "binary");
+    assert(token > 0 && settled(epoch, token) == 1);
     assert(pthread_mutex_lock(&hook_lock) == 0);
+    read_entered = release_read = watched_closes = 0;
     hold_read = 1;
     assert(pthread_mutex_unlock(&hook_lock) == 0);
-    assert(silly_files_read(epoch, token, 0, 11) == 0);
+    if (directory) assert(silly_files_list(epoch, token, 128, 32768) == 0);
+    else assert(silly_files_read(epoch, token, 0, 11) == 0);
     await_read();
     assert(silly_files_cancel(epoch, token) == 0);
     assert(silly_files_pending(epoch) == 1);
@@ -328,6 +336,41 @@ static void cleanup(void) {
     assert(rmdir(outside_path) == 0);
     assert(rmdir(base) == 0);
 }
+static void static_directories(int64_t epoch, int32_t root) {
+    int64_t token = silly_files_static_open(epoch, root, bytes(""), 1, 10);
+    assert(token > 0 && settled(epoch, token) == 1);
+    assert(silly_files_static_info(epoch, token) == 2);
+    assert(silly_files_read(epoch, token, 0, 1) == -EISDIR);
+    assert(silly_files_list(epoch, token, 128, 32768) == 0);
+    assert(settled(epoch, token) == 1);
+    uint8_t listing[32768];
+    int64_t count = silly_files_listing(epoch, token, (files_bytes){listing, sizeof listing});
+    assert(count > 0);
+    assert(silly_files_listing(epoch, token, (files_bytes){listing, 1}) == -ENOBUFS);
+    assert(silly_files_list(epoch, token, 128, 32768) == -EALREADY);
+    int64_t at = 0;
+    while (at < count) {
+        assert(count - at >= 3);
+        unsigned kind = listing[at], length = listing[at + 1] + listing[at + 2] * 256;
+        at += 3;
+        assert(kind == 1 && length > 0 && length <= 255 && length <= count - at);
+        assert(!(length == 9 && !memcmp(listing + at, "file-link", 9)));
+        assert(!(length == 8 && !memcmp(listing + at, "dir-link", 8)));
+        at += length;
+    }
+    assert(silly_files_cancel(epoch, token) == 0); wait_pending(epoch, 0);
+    token = silly_files_static_open(epoch, root, bytes(""), 0, 0);
+    assert(token > 0 && settled(epoch, token) == 1);
+    assert(silly_files_list(epoch, token, 1, 32768) == 0);
+    assert(settled(epoch, token) == -EOVERFLOW);
+    assert(silly_files_cancel(epoch, token) == 0); wait_pending(epoch, 0);
+    const char *invalid[] = {"../", "%2e%2e/", "dir-link/", "file-link", "pipe", "binary/"};
+    for (size_t i = 0; i < sizeof invalid / sizeof *invalid; ++i) {
+        token = silly_files_static_open(epoch, root, bytes(invalid[i]), 1, 10);
+        assert(token > 0 && settled(epoch, token) < 0);
+        assert(silly_files_cancel(epoch, token) == 0); wait_pending(epoch, 0);
+    }
+}
 static void boundary_entropy(void) {
     uint8_t storage[18];
     memset(storage, 0xa5, sizeof storage);
@@ -345,12 +388,14 @@ int main(void) {
     int64_t epoch = silly_files_start(1, 2, 257);
     assert(epoch > 0);
     security(epoch, (int32_t)root);
+    static_directories(epoch, (int32_t)root);
     exact_reads(epoch, (int32_t)root);
     identity(epoch, (int32_t)root);
     capacity(epoch, (int32_t)root);
     symlink_race(epoch, (int32_t)root);
     finish_pool(epoch);
-    pending_cancel((int32_t)root);
+    pending_cancel((int32_t)root, 0);
+    pending_cancel((int32_t)root, 1);
     assert(silly_files_root_close((int32_t)root) == 0);
     cleanup();
     puts("rooted file security, bounded reads, identity and pending cancellation passed");

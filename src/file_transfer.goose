@@ -157,6 +157,7 @@ fn publish_file_metadata<V>(state: FileTransfer&, out: ChunkWriter&) -> StreamSt
     target.last_modified = format_http_date(result.metadata.modified_seconds);
     target.representation_length = result.metadata.size;
     target.status = 200;
+    target.content_encoding = state.content_encoding;
     if static_not_modified(state, result.metadata, validator) {
         target.status = 304;
     }

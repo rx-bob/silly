@@ -40,6 +40,7 @@ struct FileTransfer {
     if_range_present: bool = false,
     if_range_valid: bool = true,
     if_range: u8[..256] = [],
+    content_encoding: u8[..16] = [],
     content_type: u8[..512] = [],
     multipart: FileMultipart = FileMultipart {
     },

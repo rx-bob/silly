@@ -96,7 +96,11 @@ fn restore_stream_headers<S>(slot: StreamSlot<S>&, response: Response&) -> Respo
         }
         let field = header_view(slot.retained_fields, slot.retained_headers, index);
         if (metadata.content_type.len > 0 && header_name_equal(field.name, "Content-Type"))
-            || (metadata.content_range.len > 0 && header_name_equal(field.name, "Content-Range"))
+            || ((metadata.content_range.len > 0 || metadata.suppress_content_range)
+            && header_name_equal(field.name, "Content-Range"))
+            || ((metadata.content_encoding.len > 0 || metadata.suppress_content_encoding)
+            && header_name_equal(field.name, "Content-Encoding"))
+            || (metadata.location.len > 0 && header_name_equal(field.name, "Location"))
             || (metadata.accept_ranges && header_name_equal(field.name, "Accept-Ranges")) {
             continue;
         }
@@ -120,6 +124,16 @@ fn restore_stream_headers<S>(slot: StreamSlot<S>&, response: Response&) -> Respo
         return response.error;
     }
     if metadata.accept_ranges && add_header(response, "Accept-Ranges", "bytes") != ResponseError.None {
+        return response.error;
+    }
+    if metadata.content_encoding.len > 0
+        && add_header(response, "Content-Encoding", metadata.content_encoding) != ResponseError.None {
+        return response.error;
+    }
+    if metadata.location.len > 0 && add_header(response, "Location", metadata.location) != ResponseError.None {
+        return response.error;
+    }
+    if metadata.vary_accept_encoding && add_header(response, "Vary", "Accept-Encoding") != ResponseError.None {
         return response.error;
     }
     return ResponseError.None;

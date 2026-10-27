@@ -56,6 +56,7 @@ fn select_file_multipart(state: FileTransfer&, plan: RangePlan, target: StreamMe
         state.multipart.boundary.push(hex[byte % 16]);
     }
     state.multipart.ranges = plan.ranges;
+    state.multipart.content_encoding = state.content_encoding;
     let length = file_multipart_length(state.multipart, state.size, state.content_type);
     if length < 0 {
         state.multipart = FileMultipart {
@@ -64,7 +65,11 @@ fn select_file_multipart(state: FileTransfer&, plan: RangePlan, target: StreamMe
     }
     state.multipart.enabled = true;
     target.status = 206;
+    target.suppress_content_range = true;
+    target.content_encoding.clear();
+    target.suppress_content_encoding = true;
     target.representation_length = length;
+    target.content_type.clear();
     target.content_type.append(str("multipart/byteranges; boundary=", state.multipart.boundary));
     return true;
 }

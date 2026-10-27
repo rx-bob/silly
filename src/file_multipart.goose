@@ -15,6 +15,7 @@ enum FilePartPhase {
 struct FileMultipart {
     enabled: bool = false,
     ranges: ByteRange[..16] = [],
+    content_encoding: u8[..16] = [],
     boundary: u8[..32] = [],
     index: i64 = 0,
     phase: FilePartPhase = FilePartPhase.Header,
@@ -22,10 +23,16 @@ struct FileMultipart {
     sent: i64 = 0,
 }
 
-fn file_part_head(boundary: u8[:], range: ByteRange, size: i64, content_type: u8[:]) -> u8[>..] {
+fn file_part_head(boundary: u8[:], range: ByteRange, size: i64, content_type: u8[:],
+    content_encoding: u8[:] = "") -> u8[>..] {
+    let encoding: u8[>..] = if content_encoding.len == 0 {
+        ""
+    } else {
+        str("Content-Encoding: ", content_encoding, "\r\n")
+    };
     return str("--", boundary, "\r\nContent-Type: ", content_type,
         "\r\nContent-Range: bytes ", range.offset, "-", range.offset + range.length - 1,
-        "/", size, "\r\n\r\n");
+        "/", size, "\r\n", encoding, "\r\n");
 }
 
 // Includes every delimiter in the promised length. Reject overflow before commitment.
@@ -33,7 +40,7 @@ fn file_multipart_length(parts: FileMultipart&, size: i64, content_type: u8[:]) 
     var total: i64 = parts.boundary.len + 6;
     var framing = total;
     for range in parts.ranges {
-        let head = file_part_head(parts.boundary, range, size, content_type);
+        let head = file_part_head(parts.boundary, range, size, content_type, parts.content_encoding);
         if head.len > parts.framing.cap || head.len + 2 > 16384 - framing {
             return -1;
         }
@@ -79,7 +86,7 @@ fn prepare_file_part(parts: FileMultipart&, position: i64&, remaining: i64&,
     let range = parts.ranges[parts.index];
     position = range.offset;
     remaining = range.length;
-    parts.framing.append(file_part_head(parts.boundary, range, size, content_type));
+    parts.framing.append(file_part_head(parts.boundary, range, size, content_type, parts.content_encoding));
     parts.phase = FilePartPhase.Data;
     return true;
 }

@@ -207,7 +207,42 @@ fn range_headers() {
     assert(silly::restore_stream_headers(slot, response) == silly::ResponseError.HeaderCountLimit);
 }
 
+fn multipart_suppression() {
+    var slot = silly::StreamSlot<State> {
+    };
+    var fields: silly::HeaderField[>..] = [];
+    var bytes: u8[>..] = [];
+    var output: u8[>..] = [];
+    var response = silly::Response {
+        limits: silly::Limits {
+        },
+        header_fields: fields,
+        header_bytes: bytes,
+        output: output,
+        phase: silly::ResponsePhase.Prepared,
+        ..
+    };
+    assert(silly::add_header(response, "Content-Range", "bytes 0-1/9") == silly::ResponseError.None);
+    assert(silly::add_header(response, "Content-Encoding", "gzip") == silly::ResponseError.None);
+    assert(silly::add_header(response, "Vary", "Origin") == silly::ResponseError.None);
+    assert(silly::retain_stream_head(slot, response, silly::ResponseWireOptions {
+        }, 1024)
+        == silly::ResponseError.None);
+    slot.producer.continuation.metadata.suppress_content_range = true;
+    slot.producer.continuation.metadata.suppress_content_encoding = true;
+    slot.producer.continuation.metadata.vary_accept_encoding = true;
+    fields.clear();
+    bytes.clear();
+    assert(silly::restore_stream_headers(slot, response) == silly::ResponseError.None);
+    assert(fields.len == 2);
+    assert(silly::header_view(fields, bytes, 0).name == "Vary");
+    assert(silly::header_view(fields, bytes, 0).value == "Origin");
+    assert(silly::header_view(fields, bytes, 1).name == "Vary");
+    assert(silly::header_view(fields, bytes, 1).value == "Accept-Encoding");
+}
+
 fn::main() {
+    stream_metadata_test::multipart_suppression();
     stream_metadata_test::range_headers();
     stream_metadata_test::retention_limits();
     stream_metadata_test::missing_metadata();

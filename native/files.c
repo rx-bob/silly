@@ -6,6 +6,7 @@
 #define _DARWIN_C_SOURCE 1
 #endif
 #include <errno.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <pthread.h>
@@ -19,11 +20,14 @@
 typedef struct { uint8_t *data; int64_t len; } files_bytes;
 enum { FILES_SLOTS = 64, FILES_WORKERS = 4, FILES_PATH = 4096, FILES_CHUNK = 4096 };
 enum { F_FREE, F_OPEN_QUEUE, F_OPEN_BUSY, F_IDLE, F_READ_QUEUE, F_READ_BUSY,
-       F_READY, F_EOF, F_ERROR, F_CLOSE_QUEUE, F_CLOSE_BUSY };
+       F_READY, F_EOF, F_ERROR, F_CLOSE_QUEUE, F_CLOSE_BUSY, F_LIST_QUEUE, F_LIST_BUSY };
 struct files_slot {
     int state, cancelled, fd, root_fd, error;
     int64_t token, size, offset, requested, count;
     int64_t modified_seconds, modified_nanoseconds, observed_seconds, device, inode;
+    int static_mode, want_gzip, compressed, directory, listing_ready;
+    int64_t freshness_ms, entries_max, listing_max, listing_count;
+    uint8_t listing[32768];
     char path[FILES_PATH + 1];
     uint8_t bytes[FILES_CHUNK];
 };
@@ -85,14 +89,33 @@ static int files_decode(const char *input, char *output) {
     return 0;
 }
 
-// Consumes the pinned root duplicate on every path. Each component is opened without symlinks.
+static void files_snapshot(struct files_slot *slot, const struct stat *metadata) {
+#ifdef __APPLE__
+    slot->modified_seconds = metadata->st_mtimespec.tv_sec;
+    slot->modified_nanoseconds = metadata->st_mtimespec.tv_nsec;
+#else
+    slot->modified_seconds = metadata->st_mtim.tv_sec;
+    slot->modified_nanoseconds = metadata->st_mtim.tv_nsec;
+#endif
+    slot->device = (int64_t)metadata->st_dev;
+    slot->inode = (int64_t)metadata->st_ino;
+    slot->observed_seconds = (int64_t)time(NULL);
+    slot->directory = S_ISDIR(metadata->st_mode);
+}
+
+// Every descendant is opened without following links. The supplied root is consumed.
 static int files_walk(int root, const char *encoded, int64_t *size, int *error, struct files_slot *slot) {
-    char path[FILES_PATH + 1];
-    *error = files_decode(encoded, path);
+    char path[FILES_PATH + 1], input[FILES_PATH + 1];
+    size_t length = strlen(encoded);
+    memcpy(input, encoded, length + 1);
+    int require_directory = slot->static_mode && length && input[length - 1] == '/';
+    if (require_directory) input[--length] = 0;
+    *error = length ? files_decode(input, path) : slot->static_mode ? 0 : EINVAL;
     if (*error) { files_close(root); return -1; }
     struct stat metadata;
     if (fstat(root, &metadata) < 0) { *error = errno; files_close(root); return -1; }
     if (!S_ISDIR(metadata.st_mode)) { *error = ENOTDIR; files_close(root); return -1; }
+    if (!length) { files_snapshot(slot, &metadata); *size = 0; return root; }
     char *component = path;
     for (;;) {
         char *slash = strchr(component, '/');
@@ -104,33 +127,27 @@ static int files_walk(int root, const char *encoded, int64_t *size, int *error, 
         files_close(root);
         if (next < 0) return -1;
         if (fstat(next, &metadata) < 0) { *error = errno; files_close(next); return -1; }
-        if ((slash && !S_ISDIR(metadata.st_mode)) || (!slash && !S_ISREG(metadata.st_mode))) {
-            *error = slash ? ENOTDIR : EINVAL;
-            files_close(next);
-            return -1;
+        if ((slash && !S_ISDIR(metadata.st_mode)) || (!slash && !S_ISREG(metadata.st_mode)
+            && !(slot->static_mode && S_ISDIR(metadata.st_mode)))) {
+            *error = slash ? ENOTDIR : EINVAL; files_close(next); return -1;
         }
         if (!slash) {
+            if (require_directory && !S_ISDIR(metadata.st_mode)) {
+                *error = ENOTDIR; files_close(next); return -1;
+            }
             if (metadata.st_size < 0 || (uintmax_t)metadata.st_size > INT64_MAX) {
                 *error = EOVERFLOW; files_close(next); return -1;
             }
-            *size = (int64_t)metadata.st_size;
-#ifdef __APPLE__
-            slot->modified_seconds = metadata.st_mtimespec.tv_sec;
-            slot->modified_nanoseconds = metadata.st_mtimespec.tv_nsec;
-#else
-            slot->modified_seconds = metadata.st_mtim.tv_sec;
-            slot->modified_nanoseconds = metadata.st_mtim.tv_nsec;
-#endif
-            // The busy slot remains pinned; publishing fd under files_lock publishes this snapshot.
-            slot->device = (int64_t)metadata.st_dev;
-            slot->inode = (int64_t)metadata.st_ino;
-            slot->observed_seconds = (int64_t)time(NULL);
+            files_snapshot(slot, &metadata);
+            *size = slot->directory ? 0 : (int64_t)metadata.st_size;
             return next;
         }
         root = next;
         component = slash + 1;
     }
 }
+
+#include "files_static.h"
 
 static struct files_slot *files_find(int64_t epoch, int64_t token) {
     if (!epoch || epoch != files_epoch || token <= 0) return NULL;
@@ -143,7 +160,7 @@ static int files_next_job(void) {
     for (int offset = 0; offset < files_capacity; ++offset) {
         int index = (files_cursor + offset) % files_capacity;
         int state = files_slots[index].state;
-        if (state == F_OPEN_QUEUE || state == F_READ_QUEUE || state == F_CLOSE_QUEUE) {
+        if (state == F_OPEN_QUEUE || state == F_READ_QUEUE || state == F_CLOSE_QUEUE || state == F_LIST_QUEUE) {
             files_cursor = (index + 1) % files_capacity;
             return index;
         }
@@ -169,7 +186,7 @@ static void files_finish_job(struct files_slot *slot, int job, int opened, int64
     } else {
         slot->error = error;
         slot->count = count;
-        slot->state = error ? F_ERROR : job == F_OPEN_QUEUE ? F_IDLE : count ? F_READY : F_EOF;
+        slot->state = error ? F_ERROR : job == F_OPEN_QUEUE || job == F_LIST_QUEUE ? F_IDLE : count ? F_READY : F_EOF;
     }
     pthread_mutex_unlock(&files_lock);
 }
@@ -188,13 +205,20 @@ static void *files_worker(void *unused) {
         }
         struct files_slot *slot = &files_slots[index];
         int job = slot->state;
-        slot->state = job == F_OPEN_QUEUE ? F_OPEN_BUSY : job == F_READ_QUEUE ? F_READ_BUSY : F_CLOSE_BUSY;
+        slot->state = job == F_OPEN_QUEUE ? F_OPEN_BUSY : job == F_READ_QUEUE ? F_READ_BUSY
+            : job == F_LIST_QUEUE ? F_LIST_BUSY : F_CLOSE_BUSY;
         int fd = slot->fd, root = slot->root_fd;
         if (job == F_OPEN_QUEUE) slot->root_fd = -1;
         pthread_mutex_unlock(&files_lock);
         int opened = -1, error = 0;
         int64_t size = 0, count = 0;
-        if (job == F_OPEN_QUEUE) opened = files_walk(root, slot->path, &size, &error, slot);
+        if (job == F_OPEN_QUEUE) opened = files_open_job(root, slot, &size, &error);
+        else if (job == F_LIST_QUEUE) {
+#ifdef SILLY_FILES_TEST
+            silly_files_test_before_read(fd);
+#endif
+            error = files_list_job(fd, slot);
+        }
         else if (job == F_READ_QUEUE) {
 #ifdef SILLY_FILES_TEST
             silly_files_test_before_read(fd);
@@ -208,7 +232,7 @@ static void *files_worker(void *unused) {
 }
 
 int64_t silly_files_root_open(files_bytes path) {
-    if (path.len <= 0 || path.len > FILES_PATH || !path.data || memchr(path.data, 0, (size_t)path.len)) return -EINVAL;
+    if (path.len <= 0 || path.len > FILES_PATH || !path.data || (path.len && memchr(path.data, 0, (size_t)path.len))) return -EINVAL;
     char name[FILES_PATH + 1];
     memcpy(name, path.data, (size_t)path.len);
     int64_t length = path.len;
@@ -251,8 +275,8 @@ int64_t silly_files_start(int32_t workers, int32_t capacity, int32_t chunk_bytes
     return -error;
 }
 
-int64_t silly_files_open(int64_t epoch, int32_t root, files_bytes path) {
-    if (!path.data || path.len <= 0 || path.len > FILES_PATH || memchr(path.data, 0, (size_t)path.len)) return -EINVAL;
+static int64_t files_admit(int64_t epoch, int32_t root, files_bytes path, int mode, int gzip, int64_t freshness) {
+    if ((!path.data && path.len) || path.len < (mode ? 0 : 1) || path.len > FILES_PATH || (path.len && memchr(path.data, 0, (size_t)path.len))) return -EINVAL;
     pthread_mutex_lock(&files_lock);
     if (epoch <= 0 || epoch != files_epoch || files_stopping) { pthread_mutex_unlock(&files_lock); return -ESTALE; }
     int index = 0;
@@ -265,12 +289,21 @@ int64_t silly_files_open(int64_t epoch, int32_t root, files_bytes path) {
     memset(slot, 0, sizeof *slot);
     slot->fd = -1; slot->root_fd = pinned; slot->token = ++files_next_token;
     slot->state = F_OPEN_QUEUE;
-    memcpy(slot->path, path.data, (size_t)path.len);
+    slot->static_mode = mode; slot->want_gzip = gzip; slot->freshness_ms = freshness;
+    if (path.len) memcpy(slot->path, path.data, (size_t)path.len);
     slot->path[path.len] = 0;
     int64_t token = slot->token;
     pthread_cond_signal(&files_wake);
     pthread_mutex_unlock(&files_lock);
     return token;
+}
+
+int64_t silly_files_open(int64_t epoch, int32_t root, files_bytes path) {
+    return files_admit(epoch, root, path, 0, 0, 0);
+}
+int64_t silly_files_static_open(int64_t epoch, int32_t root, files_bytes path, int32_t gzip, int64_t freshness) {
+    if (gzip < 0 || gzip > 1 || freshness < 0 || freshness > 86400000) return -EINVAL;
+    return files_admit(epoch, root, path, 1, gzip, freshness);
 }
 
 int64_t silly_files_status(int64_t epoch, int64_t token) {
@@ -303,7 +336,7 @@ int64_t silly_files_read(int64_t epoch, int64_t token, int64_t offset, int64_t c
     pthread_mutex_lock(&files_lock);
     struct files_slot *slot = files_find(epoch, token);
     int64_t result = !slot ? -ESTALE : slot->cancelled || files_stopping ? -ECANCELED
-        : count > files_chunk ? -EINVAL : slot->state != F_IDLE && slot->state != F_EOF ? -EBUSY : 0;
+        : slot->directory ? -EISDIR : count > files_chunk ? -EINVAL : slot->state != F_IDLE && slot->state != F_EOF ? -EBUSY : 0;
     if (!result) {
         slot->offset = offset; slot->requested = count; slot->state = F_READ_QUEUE;
         pthread_cond_signal(&files_wake);
@@ -328,7 +361,8 @@ int64_t silly_files_take(int64_t epoch, int64_t token, files_bytes output) {
 
 static void files_mark_cancel(struct files_slot *slot) {
     slot->cancelled = 1;
-    if (slot->state != F_OPEN_BUSY && slot->state != F_READ_BUSY && slot->state != F_CLOSE_BUSY)
+    if (slot->state != F_OPEN_BUSY && slot->state != F_READ_BUSY && slot->state != F_CLOSE_BUSY
+        && slot->state != F_LIST_BUSY)
         slot->state = F_CLOSE_QUEUE;
 }
 
@@ -400,7 +434,7 @@ int64_t silly_files_random(files_bytes output) {
 #ifdef __linux__
     size_t filled = 0;
     while (filled < 16) {
-        ssize_t count = getrandom(output.data + filled, 16 - filled, 0);
+        ssize_t count = getrandom(output.data + filled, 16 - filled, GRND_NONBLOCK);
         if (count < 0) { if (errno == EINTR) continue; return -errno; }
         if (!count) return -EIO;
         filled += (size_t)count;
@@ -409,4 +443,43 @@ int64_t silly_files_random(files_bytes output) {
     if (getentropy(output.data, 16) != 0) return -errno;
 #endif
     return 0;
+}
+
+// Published flags are read only after the open job releases its slot under files_lock.
+int64_t silly_files_static_info(int64_t epoch, int64_t token) {
+    pthread_mutex_lock(&files_lock);
+    struct files_slot *slot = files_find(epoch, token);
+    int64_t result = !slot ? -ESTALE : slot->cancelled ? -ECANCELED
+        : slot->state == F_ERROR ? -slot->error : slot->fd < 0 ? -EAGAIN
+        : slot->directory ? 2 : slot->compressed ? 3 : 1;
+    pthread_mutex_unlock(&files_lock);
+    return result;
+}
+int64_t silly_files_list(int64_t epoch, int64_t token, int64_t entries, int64_t bytes) {
+    if (entries < 1 || entries > 128 || bytes < 1 || bytes > 32768) return -EINVAL;
+    pthread_mutex_lock(&files_lock);
+    struct files_slot *slot = files_find(epoch, token);
+    int error = !slot ? ESTALE : slot->cancelled || files_stopping ? ECANCELED
+        : slot->state != F_IDLE ? EBUSY : !slot->directory ? ENOTDIR : slot->listing_ready ? EALREADY : 0;
+    if (!error) {
+        slot->entries_max = entries; slot->listing_max = bytes;
+        slot->state = F_LIST_QUEUE; pthread_cond_signal(&files_wake);
+    }
+    pthread_mutex_unlock(&files_lock);
+    return -error;
+}
+int64_t silly_files_listing(int64_t epoch, int64_t token, files_bytes output) {
+    if (output.len < 0 || (!output.data && output.len)) return -EINVAL;
+    pthread_mutex_lock(&files_lock);
+    struct files_slot *slot = files_find(epoch, token);
+    int64_t result = !slot ? -ESTALE : slot->cancelled ? -ECANCELED
+        : slot->state == F_ERROR ? -slot->error : slot->state == F_LIST_BUSY || !slot->listing_ready ? -EAGAIN
+        : slot->listing_count > output.len ? -ENOBUFS : slot->listing_count;
+    if (result > 0) memcpy(output.data, slot->listing, (size_t)result);
+    pthread_mutex_unlock(&files_lock);
+    return result;
+}
+
+int32_t silly_files_retryable(int32_t error) {
+    return error == EAGAIN || error == EWOULDBLOCK;
 }
