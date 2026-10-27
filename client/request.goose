@@ -28,6 +28,7 @@ struct RequestOptions {
     body: const u8[:] = "",
     body_length: i64 = -1,
     decoding: ContentDecoding = ContentDecoding.Raw,
+    suppress_default_accept: bool = false,
 }
 
 fn request_token(value: u8[:]) -> bool {
@@ -97,6 +98,17 @@ fn request_header_valid(header: RequestHeader, decoding: ContentDecoding) -> boo
 fn request_headers(out: u8[>..]&, options: RequestOptions) -> ClientError {
     if options.headers.len > 128 {
         return ClientError.Limit;
+    }
+    var has_accept = false;
+    for header in options.headers {
+        has_accept = has_accept || request_name_equal(header.name, "Accept");
+    }
+    if options.suppress_default_accept && !has_accept {
+        if options.headers.len == 128 {
+            return ClientError.Limit;
+        }
+        // No space marks an internal suppression directive; explicit empty values retain a space.
+        out.append("Accept:\r\n");
     }
     for header in options.headers {
         if !request_header_valid(header, options.decoding) {

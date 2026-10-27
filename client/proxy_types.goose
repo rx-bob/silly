@@ -19,6 +19,7 @@ struct ProxyOptions {
     host: ProxyHost = ProxyHost.Target,
     host_value: const u8[:] = "",
     decoding: ContentDecoding = ContentDecoding.Raw,
+    suppress_default_accept: bool = false,
     inspection_bytes_max: i64 = 0,
     poll_interval_ms: i64 = 1,
     pending_bytes_max: i64 = 4096,

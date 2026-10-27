@@ -68,6 +68,7 @@ fn admit_proxy_request(state: ProxyTransfer&, request: silly::Request,
         method: request.method,
         headers: fields,
         decoding: options.decoding,
+        suppress_default_accept: options.suppress_default_accept,
         ..
     };
     match request.body_state {

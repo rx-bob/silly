@@ -298,7 +298,7 @@ static CURLcode client_configure(struct client_slot *slot) {
         char line[CLIENT_HEADERS+1]; memcpy(line,start,length); line[length]=0;
         char *colon=strchr(line,':'), *value=colon ? colon+1 : NULL;
         while (value && (*value==' ' || *value=='\t')) ++value;
-        if (value && !*value) { *colon=';'; colon[1]=0; }
+        if (value && colon[1] && !*value) { *colon=';'; colon[1]=0; }
         struct curl_slist *next=curl_slist_append(slot->custom_headers,line);
         if (!next) return CURLE_OUT_OF_MEMORY;
         slot->custom_headers=next; start=end+2;
