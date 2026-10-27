@@ -1,4 +1,4 @@
-// One owned chunk per producer. Transport acknowledges bytes before any subsequent step.
+// One owned chunk per producer. Duplex housekeeping never borrows pending output.
 namespace silly;
 
 import.continuation;
@@ -15,6 +15,7 @@ struct StreamProducer<S> {
         ..
     },
     committed: bool = false,
+    duplex: bool = false,
     commit_requested: bool = false,
     render_error: bool = false,
     close_required: bool = false,
@@ -26,7 +27,7 @@ fn valid_stream_limits(limits: StreamLimits) -> bool {
 }
 
 // Timer origin is the step that requested it, not the final transport acknowledgement.
-// Ready callbacks require downstream capacity, represented by absence of a pending chunk.
+// Duplex callbacks without downstream capacity receive a zero-length writer.
 fn stream_resume<S, F>(producer: StreamProducer<S>&, key: TransferKey,
     event: StreamEvent, now: i64) -> ResumeResult {
     let slot .= producer.continuation;
@@ -39,7 +40,7 @@ fn stream_resume<S, F>(producer: StreamProducer<S>&, key: TransferKey,
     if event == StreamEvent.Cancelled {
         return stream_cancel(producer, key, F);
     }
-    if slot.phase == ContinuationPhase.Pending {
+    if slot.phase == ContinuationPhase.Pending && !producer.duplex {
         return ResumeResult.Pending;
     }
     if now < 0 || !valid_stream_limits(producer.limits) {
@@ -50,7 +51,12 @@ fn stream_resume<S, F>(producer: StreamProducer<S>&, key: TransferKey,
         return ResumeResult.Waiting;
     }
     slot.chunk_capacity = producer.limits.pending_bytes_max;
-    let result = resume(slot, key, event, F);
+    slot.failure_enabled = !producer.committed;
+    let result = if slot.phase == ContinuationPhase.Pending {
+        resume_pending(slot, event, F)
+    } else {
+        resume(slot, key, event, F)
+    };
     if slot.phase == ContinuationPhase.Failed {
         stream_failure_policy(producer);
         return result;
@@ -75,6 +81,9 @@ fn stream_event_ready<S>(producer: StreamProducer<S>&, event: StreamEvent, now: 
         },
         After _ => {
             return event == StreamEvent.Ready && now >= producer.due_ms;
+        },
+        InputAfter _ => {
+            return (event == StreamEvent.Ready && now >= producer.due_ms) || input_event(event);
         },
         Input => {
             match event {
@@ -104,6 +113,12 @@ fn stream_set_timer<S>(producer: StreamProducer<S>&, now: i64) -> bool {
             }
             producer.due_ms = now + timer.delay_ms;
         },
+        InputAfter timer => {
+            if timer.delay_ms > 9223372036854775807 - now {
+                return false;
+            }
+            producer.due_ms = now + timer.delay_ms;
+        },
         _ => {
         },
     }
@@ -112,7 +127,7 @@ fn stream_set_timer<S>(producer: StreamProducer<S>&, now: i64) -> bool {
 
 fn stream_wait_ms<S>(producer: StreamProducer<S>&, now: i64) -> i64 {
     let slot .= producer.continuation;
-    if terminal(slot) || slot.phase == ContinuationPhase.Pending {
+    if terminal(slot) || (slot.phase == ContinuationPhase.Pending && !producer.duplex) {
         return 9223372036854775807;
     }
     if slot.phase == ContinuationPhase.Ready {
@@ -127,6 +142,13 @@ fn stream_wait_ms<S>(producer: StreamProducer<S>&, now: i64) -> i64 {
                 return 0;
             }
             return if now >= producer.due_ms {
+                0
+            } else {
+                producer.due_ms - now
+            };
+        },
+        InputAfter _ => {
+            return if now < 0 || now >= producer.due_ms {
                 0
             } else {
                 producer.due_ms - now
@@ -182,6 +204,7 @@ fn stream_fail<S, F>(producer: StreamProducer<S>&, key: TransferKey, reason: Str
     if terminal(slot) {
         return ResumeResult.Terminal;
     }
+    slot.failure.selected = false;
     slot.phase = ContinuationPhase.Failed;
     slot.error = reason;
     slot.terminal_count += 1;
@@ -201,4 +224,21 @@ fn stream_discard_pending<S>(producer: StreamProducer<S>&) {
     producer.continuation.produced = 0;
     producer.continuation.acknowledged = 0;
     producer.continuation.flush = false;
+}
+
+fn input_event(event: StreamEvent) -> bool {
+    match event {
+        Input _ => {
+            return true;
+        },
+        InputEnd => {
+            return true;
+        },
+        InputFailed _ => {
+            return true;
+        },
+        _ => {
+            return false;
+        },
+    }
 }

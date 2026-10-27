@@ -186,7 +186,8 @@ fn service_active_stream<R, A, S, F, O>(storage: ServerStorage&, options: Server
         }
         let was_writable = stream_wants_write(slot, connection);
         if stream_timeout(slot, connection, options, now) == TimeoutKind.None
-            && (slot.framing == ResponseFraming.Chunked || slot.framing == ResponseFraming.Close) {
+            && (slot.deferred || slot.framing == ResponseFraming.Chunked || slot.framing == ResponseFraming.Close
+            || (slot.framing == ResponseFraming.Fixed && slot.fixed_remaining > 0)) {
             read_stream_input(slot, connection, buffers, options, now, events, F);
         }
         if !was_writable && stream_wants_write(slot, connection) {

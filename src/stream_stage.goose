@@ -105,6 +105,7 @@ fn initialize_stream_slot<S>(slot: StreamSlot<S>&, connection: Connection&) {
         limits: StreamLimits {
             pending_bytes_max: slot.start.pending_bytes_max
         },
+        duplex: slot.start.duplex,
         ..
     };
     slot.input_enabled = slot.start.input;

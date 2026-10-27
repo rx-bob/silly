@@ -33,3 +33,5 @@ extern fn silly_client_upload_end(epoch: i64, token: i64) -> i64;
 extern fn silly_client_response(epoch: i64, token: i64, fields: i64[:]) -> i64;
 
 extern fn silly_client_redirect_url(epoch: i64, token: i64, output: u8[:]) -> i64;
+
+extern fn silly_client_abandon(epoch: i64, token: i64) -> i64;

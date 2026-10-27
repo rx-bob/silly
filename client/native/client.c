@@ -21,7 +21,7 @@ enum { C_FREE=-1, C_QUEUED, C_ACTIVE, C_COMPLETED, C_FAILED };
 enum { P_QUEUE, P_CONNECT, P_RESPONSE, P_BODY, P_COMPLETE, P_UPLOAD };
 enum { CLIENT_SLOTS=64, CLIENT_URL=4096, CLIENT_HEADERS=16384 };
 struct client_slot {
-    int status, error, phase, native_code, cancelled, paused, send_paused;
+    int status, error, phase, native_code, cancelled, paused, send_paused, abandoned;
     int body_mode, decode, upload_eof, upload_done, final_ready, interim_count, decoded, bodyless, head_open, location_error;
     int64_t upload_length, upload_total, upload_sent;
     size_t upload_count, upload_taken, header_total;
@@ -327,6 +327,7 @@ static void client_complete(struct client_slot *slot, int error, CURLcode code) 
     if (!error) slot->phase = P_COMPLETE;
     slot->http_status = status; slot->connects = connects;
     if (error) slot->pending = slot->taken = 0;
+    if (slot->abandoned) { memset(slot,0,sizeof *slot); slot->status=C_FREE; }
     client_notify(); pthread_mutex_unlock(&client_lock);
 }
 static int client_expired(struct client_slot *slot, int64_t now) {
@@ -717,6 +718,16 @@ int64_t silly_client_cancel(int64_t epoch, int64_t token) {
     if (slot->status==C_QUEUED || slot->status==C_ACTIVE) { slot->cancelled=1; client_wakeup(); }
     pthread_mutex_unlock(&client_lock);
     return 0;
+}
+// Relinquish the caller's handle now; only the worker destroys active curl/decoder owners.
+int64_t silly_client_abandon(int64_t epoch, int64_t token) {
+    pthread_mutex_lock(&client_lock);
+    struct client_slot *slot=client_find(epoch,token);
+    if (!slot) { pthread_mutex_unlock(&client_lock); return -C_STALE; }
+    if (slot->status==C_QUEUED || slot->status==C_ACTIVE) {
+        slot->abandoned=1; slot->cancelled=1; client_wakeup();
+    } else { memset(slot,0,sizeof *slot); slot->status=C_FREE; }
+    pthread_mutex_unlock(&client_lock); return 0;
 }
 int64_t silly_client_release(int64_t epoch, int64_t token) {
     pthread_mutex_lock(&client_lock);

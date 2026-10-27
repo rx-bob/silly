@@ -19,6 +19,7 @@ import.stream;
 import.stream_contract;
 import.stream_deadlines;
 import.stream_driver;
+import.stream_failure;
 import.stream_input;
 import.stream_metadata;
 import.timeout_types;
@@ -143,7 +144,7 @@ fn service_stream<R, A, S, F, O>(driver: StreamDriver<R, A, S> & , connection: C
     advance_stream_output(slot, connection, buffers, now, F);
     if producer.render_error {
         cancel_stream_slot(slot, F);
-        render_stream_failure(connection, buffers, options);
+        render_stream_failure(connection, buffers, options, producer.continuation.failure);
         connection.active_ms = now;
         return;
     }
@@ -220,13 +221,19 @@ fn advance_stream_producer<S, F>(slot: StreamSlot<S>&, now: i64) {
         stream_cancel(producer, producer.continuation.key, F);
         producer.close_required = false;
         producer.commit_requested = true;
-    } else if !slot.input_stepped && !slot.ending && stream_pending_bytes(producer) == 0
+    } else if !slot.input_stepped && !slot.ending
+        && (stream_pending_bytes(producer) == 0 || producer.duplex)
         && !terminal(producer.continuation) {
         stream_resume(producer, producer.continuation.key, StreamEvent.Ready, now, F);
     }
 }
 
-fn render_stream_failure(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions) {
+fn render_stream_failure(connection: Connection&, buffers: ConnectionBuffers,
+    options: ServerOptions, selected: StreamFailureResponse&) {
+    if selected.selected {
+        render_owned_stream_failure(selected, connection, buffers, options);
+        return;
+    }
     var failure = ResponseFailure {
         kind: ResponseFailureKind.HandlerFailure,
         error: ResponseError.Application,

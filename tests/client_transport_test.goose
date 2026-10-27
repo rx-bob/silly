@@ -5,10 +5,12 @@ import client from "../client";
 
 import std;
 
+import.client_abandon_cases;
 import.client_deadline_cases;
 import.client_transport_cases;
 
 fn::main() {
+    client_abandon::lifecycle();
     client_cases::reuse_and_tls();
     client_cases::pause_resume();
     client_cases::saturation_cancel();

@@ -175,3 +175,19 @@ fn client_operation(result: i64) -> ClientOperation {
         },
     };
 }
+
+// Relinquish a request without waiting for cancellation; native cleanup retains active owners.
+fn abandon(request: ClientRequest&) -> ClientOperation {
+    if request.token == 0 {
+        return ClientOperation {
+            ok: true,
+            ..
+        };
+    }
+    let result = client_operation(silly_client_abandon(request.epoch, request.token));
+    if result.ok || result.error == ClientError.Stale {
+        request = ClientRequest {
+        };
+    }
+    return result;
+}

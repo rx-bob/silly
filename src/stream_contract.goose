@@ -26,6 +26,9 @@ enum StreamEvent {
 enum Wake {
     Ready,
     Input,
+    InputAfter {
+        delay_ms: i64
+    },
     After {
         delay_ms: i64
     },
@@ -45,10 +48,19 @@ enum StreamStep {
     },
 }
 
+// A callback may select an owned replacement only before the first wire write.
+struct StreamFailureResponse {
+    selected: bool = false,
+    status: i32 = 502,
+    content_type: u8[..128] = [],
+    body: u8[..4096] = [],
+}
+
 struct ChunkWriter {
     bytes: u8[:],
     used: i64 = 0,
     metadata: StreamMetadata? = null,
+    failure: StreamFailureResponse? = null,
 }
 
 // A driver-local sink. S must be fixed, owned state; the compiler rejects escaping local roots.
@@ -56,6 +68,7 @@ struct StreamStart<S> {
     selected: bool = false,
     pending_bytes_max: i64 = 4096,
     input: bool = false,
+    duplex: bool = false,
     defer_headers: bool = false,
     state: S = default<S>(),
 }
@@ -76,8 +89,25 @@ fn valid_wake(wake: Wake) -> bool {
         After timer => {
             return timer.delay_ms >= 0;
         },
+        InputAfter timer => {
+            return timer.delay_ms >= 0;
+        },
         _ => {
             return true;
+        },
+    }
+}
+
+fn input_wake(wake: Wake) -> bool {
+    match wake {
+        Input => {
+            return true;
+        },
+        InputAfter _ => {
+            return true;
+        },
+        _ => {
+            return false;
         },
     }
 }

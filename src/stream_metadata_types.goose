@@ -1,8 +1,14 @@
 // A callback may fill this owned record only before a deferred response is committed.
 namespace silly;
 
+import.headers;
+
 struct StreamMetadata {
     ready: bool = false,
+    close: bool = false,
+    replace_headers: bool = false,
+    header_fields: HeaderField[..128] = [],
+    header_bytes: u8[..16384] = [],
     status: i32 = 200,
     representation_length: i64 = -1,
     suppress_content_range: bool = false,

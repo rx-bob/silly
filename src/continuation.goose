@@ -34,6 +34,9 @@ struct Continuation<S> {
     flush: bool = false,
     metadata: StreamMetadata = StreamMetadata {
     },
+    failure: StreamFailureResponse = StreamFailureResponse {
+    },
+    failure_enabled: bool = true,
     chunk_capacity: i64 = CONTINUATION_CHUNK_BYTES,
     produced: i64 = 0,
     acknowledged: i64 = 0,
@@ -69,16 +72,62 @@ fn resume<S, F>(slot: Continuation<S>&, key: TransferKey, event: StreamEvent) ->
         notify_cancelled(slot, F);
         return result;
     }
+    slot.failure.selected = false;
     var writer = ChunkWriter {
         bytes: slot.chunk[..slot.chunk_capacity],
         metadata: slot.metadata,
+        failure: if slot.failure_enabled {
+            slot.failure
+        } else {
+            null
+        },
         ..
     };
     let step = F(slot.state, event, writer);
     let result = apply_step(slot, step, writer.used);
+    if slot.phase != ContinuationPhase.Failed {
+        slot.failure.selected = false;
+    }
     if slot.phase == ContinuationPhase.Failed {
         notify_cancelled(slot, F);
     }
+    return result;
+}
+
+// Duplex housekeeping cannot overwrite a chunk still owned by the transport.
+fn resume_pending<S, F>(slot: Continuation<S>&, event: StreamEvent) -> ResumeResult {
+    var bytes: u8[0] = [];
+    slot.failure.selected = false;
+    var writer = ChunkWriter {
+        bytes: bytes,
+        failure: if slot.failure_enabled {
+            slot.failure
+        } else {
+            null
+        },
+        ..
+    };
+    let step = F(slot.state, event, writer);
+    match step {
+        Wait wait => {
+            if writer.used == 0 && valid_wake(wait.wake) {
+                slot.failure.selected = false;
+                slot.wake = wait.wake;
+                return ResumeResult.Applied;
+            }
+        },
+        Failed failure => {
+            slot.error = failure.reason;
+            slot.phase = ContinuationPhase.Failed;
+            slot.terminal_count += 1;
+            notify_cancelled(slot, F);
+            return ResumeResult.Applied;
+        },
+        _ => {
+        },
+    }
+    let result = fail_continuation(slot);
+    notify_cancelled(slot, F);
     return result;
 }
 
@@ -161,6 +210,7 @@ fn notify_cancelled<S, F>(slot: Continuation<S>&) {
 }
 
 fn fail_continuation<S>(slot: Continuation<S>&) -> ResumeResult {
+    slot.failure.selected = false;
     slot.error = StreamError.InvalidStep;
     slot.phase = ContinuationPhase.Failed;
     slot.terminal_count += 1;

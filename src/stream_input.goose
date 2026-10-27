@@ -16,8 +16,9 @@ import.transport;
 
 fn stream_wants_input<S>(slot: StreamSlot<S>&) -> bool {
     return slot.input_enabled && !slot.input_failed
-        && slot.producer.continuation.phase == ContinuationPhase.Waiting
-        && slot.producer.continuation.wake == Wake.Input;
+        && (slot.producer.continuation.phase == ContinuationPhase.Waiting
+        || (slot.producer.duplex && slot.producer.continuation.phase == ContinuationPhase.Pending))
+        && input_wake(slot.producer.continuation.wake);
 }
 
 fn stream_input_ready<S>(slot: StreamSlot<S>&, connection: Connection&) -> bool {
@@ -30,11 +31,11 @@ fn fail_stream_input<S, F>(slot: StreamSlot<S>&, connection: Connection&, now: i
     if slot.input_failed {
         return;
     }
+    let wanted = stream_wants_input(slot);
     slot.input_failed = true;
     connection.close_after_reply = true;
     let producer .= slot.producer;
-    if producer.continuation.phase == ContinuationPhase.Waiting
-        && producer.continuation.wake == Wake.Input {
+    if wanted {
         stream_resume(producer, producer.continuation.key, StreamEvent.InputFailed {
                 reason: StreamError.Input,
             }, now, F);

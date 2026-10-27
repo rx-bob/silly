@@ -58,7 +58,7 @@ fn finalize_stream_head<S>(slot: StreamSlot<S>&, connection: Connection&,
     var options = ResponseWireOptions {
         http_minor: connection.http_minor,
         request_method: slot.request_method,
-        close: connection.close_after_reply,
+        close: connection.close_after_reply || metadata.close,
         stream_length: metadata.representation_length,
         ..
     };
@@ -90,7 +90,12 @@ fn finalize_stream_head<S>(slot: StreamSlot<S>&, connection: Connection&,
 
 fn restore_stream_headers<S>(slot: StreamSlot<S>&, response: Response&) -> ResponseError {
     let metadata = slot.producer.continuation.metadata;
-    for index in slot.retained_fields.len {
+    for index in if metadata.replace_headers {
+        0
+    } else {
+        slot.retained_fields.len
+    }
+    {
         if !valid_response_offsets(slot.retained_fields[index], slot.retained_headers.len) {
             return ResponseError.InvalidHeader;
         }
@@ -104,6 +109,15 @@ fn restore_stream_headers<S>(slot: StreamSlot<S>&, response: Response&) -> Respo
             || (metadata.accept_ranges && header_name_equal(field.name, "Accept-Ranges")) {
             continue;
         }
+        if add_header(response, field.name, field.value) != ResponseError.None {
+            return response.error;
+        }
+    }
+    for index in metadata.header_fields.len {
+        if !valid_response_offsets(metadata.header_fields[index], metadata.header_bytes.len) {
+            return ResponseError.InvalidHeader;
+        }
+        let field = header_view(metadata.header_fields, metadata.header_bytes, index);
         if add_header(response, field.name, field.value) != ResponseError.None {
             return response.error;
         }

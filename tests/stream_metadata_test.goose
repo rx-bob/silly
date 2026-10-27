@@ -241,7 +241,67 @@ fn multipart_suppression() {
     assert(silly::header_view(fields, bytes, 1).value == "Accept-Encoding");
 }
 
+fn generic_headers(replace: bool) {
+    var slot = silly::StreamSlot<State> {
+    };
+    var fields: silly::HeaderField[>..] = [];
+    var bytes: u8[>..] = [];
+    var output: u8[>..] = [];
+    var response = silly::Response {
+        limits: silly::Limits {
+        },
+        header_fields: fields,
+        header_bytes: bytes,
+        output: output,
+        phase: silly::ResponsePhase.Prepared,
+        ..
+    };
+    assert(silly::add_header(response, "X-Handler", "kept") == silly::ResponseError.None);
+    assert(silly::retain_stream_head(slot, response, silly::ResponseWireOptions {
+        }, 1024)
+        == silly::ResponseError.None);
+    let metadata .= slot.producer.continuation.metadata;
+    metadata.replace_headers = replace;
+    metadata.header_bytes.append("X-UpstreamoneX-Upstreamtwo");
+    metadata.header_fields.push(silly::HeaderField {
+            name_start: 0,
+            name_bytes: 10,
+            value_start: 10,
+            value_bytes: 3
+        });
+    metadata.header_fields.push(silly::HeaderField {
+            name_start: 13,
+            name_bytes: 10,
+            value_start: 23,
+            value_bytes: 3
+        });
+    fields.clear();
+    bytes.clear();
+    assert(silly::restore_stream_headers(slot, response) == silly::ResponseError.None);
+    let count: i64 = if replace {
+        2
+    } else {
+        3
+    };
+    assert(fields.len == count);
+    assert(silly::header_view(fields, bytes, count - 2).value == "one");
+    assert(silly::header_view(fields, bytes, count - 1).value == "two");
+    fields.clear();
+    bytes.clear();
+    response.limits.header_count_max = 1;
+    assert(silly::restore_stream_headers(slot, response) == silly::ResponseError.HeaderCountLimit);
+    fields.clear();
+    bytes.clear();
+    response.error = silly::ResponseError.None;
+    response.phase = silly::ResponsePhase.Prepared;
+    response.limits.header_count_max = 128;
+    metadata.header_fields[0].value_bytes = 1000;
+    assert(silly::restore_stream_headers(slot, response) == silly::ResponseError.InvalidHeader);
+}
+
 fn::main() {
+    stream_metadata_test::generic_headers(false);
+    stream_metadata_test::generic_headers(true);
     stream_metadata_test::multipart_suppression();
     stream_metadata_test::range_headers();
     stream_metadata_test::retention_limits();
