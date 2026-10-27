@@ -9,6 +9,7 @@ import.transfer_key;
 import.worker_options;
 
 struct ExecutorOptions {
+    serialized_name: u8[..64] = [],
     lanes: i64 = 0,
     independent_lanes: bool = false,
     queue_max: i64 = 8,
@@ -79,7 +80,9 @@ struct ExecutorReport {
     hook_failure: HookResult = HookResult.Ok,
 }
 fn valid_executor_options(options: ExecutorOptions) -> bool {
-    return options.lanes >= 0 && options.lanes <= 4
+    return (options.serialized_name.len == 0
+        || (options.lanes > 0 && valid_serialized_name(options.serialized_name)))
+        && options.lanes >= 0 && options.lanes <= 4
         && (options.lanes <= 1 || options.independent_lanes)
         && options.queue_max > 0 && options.queue_max <= 1024
         && options.outstanding_per_owner > 0 && options.outstanding_per_owner <= 1024

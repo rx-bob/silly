@@ -54,3 +54,7 @@ fn any<R>(router: silly::Router<R>&, path: u8[:], action: R,
 fn scope<R, F>(router: silly::Router<R>&, prefix: u8[:]) {
     silly::scope(router, prefix, F);
 }
+
+fn execution<R>(router: silly::Router<R>&, policy: silly::ExecutionClass) {
+    silly::execution(router, policy);
+}

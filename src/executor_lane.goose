@@ -21,7 +21,8 @@ fn run_executor_lane<R, C, I, D, H, L>(start: LaneStart, seed: C) {
 fn run_executor_lane_with_errors<R, C, I, D, H, L, E>(start: LaneStart, seed: C) {
     var app = I(seed, Owner {
             id: start.lane,
-            lane: start.lane
+            lane: start.lane,
+            serialized_name: serialized_owner_name(start),
         });
     var entries: RouteEntry<R>[>..] = [];
     var segments: RouteSegment[>..] = [];
@@ -49,7 +50,8 @@ fn run_prepared_executor_lane<R, A, H, L, E>(start: LaneStart, plan: RoutePlan<R
         app: app,
         owner: Owner {
             id: start.lane,
-            lane: start.lane
+            lane: start.lane,
+            serialized_name: serialized_owner_name(start),
         },
         ..
     };
@@ -57,7 +59,7 @@ fn run_prepared_executor_lane<R, A, H, L, E>(start: LaneStart, plan: RoutePlan<R
     let issue = if plan.issue.error != RouteError.None {
         plan.issue
     } else {
-        runtime_execution_issue(plan, start.options.lanes)
+        runtime_execution_issue(plan, start.options)
     };
     if issue.error != RouteError.None {
         error = ServerError.Routes;
@@ -176,4 +178,12 @@ fn abandon_lane_tasks<Tag>(start: LaneStart) {
                 ..
             });
     }
+}
+
+fn serialized_owner_name(start: LaneStart) -> u8[..64] {
+    return if start.lane == 0 {
+        start.options.serialized_name
+    } else {
+        []
+    };
 }

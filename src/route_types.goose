@@ -9,7 +9,7 @@ enum BodyMode {
     Streamed,
 }
 struct RouteOptions {
-    execution: ExecutionClass = ExecutionClass.Inline,
+    execution: ExecutionClass = ExecutionClass.Inherit,
     body: BodyMode = BodyMode.Buffered,
     body_bytes_max: i64 = -1,
 }
@@ -91,6 +91,7 @@ struct Router<R> {
     policy: RoutePolicy = RoutePolicy {
     },
     current_response_policy: i64 = -1,
+    current_execution: ExecutionClass = ExecutionClass.Inline,
     response_policies: ResponsePolicyEntry[>..] = [],
 }
 struct RoutePlan<R> {

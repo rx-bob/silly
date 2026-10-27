@@ -82,8 +82,10 @@ fn body_admission<R>(driver: RoutePlan<R>&, parsed: ParsedHead, cap: i64) -> Bod
     let execution = driver.entries[selected.route_id].options.execution;
     return BodyAdmission {
         execution_lane: match execution {
+            Inherit => -1,
             Inline => -1,
-            Lane lane => lane.index
+            Lane lane => lane.index,
+            Serialized selected => 0,
         },
         cap: if route_cap >= 0 {
             min(cap, route_cap)

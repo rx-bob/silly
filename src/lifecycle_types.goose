@@ -8,11 +8,12 @@ import.response;
 struct Owner {
     id: i64 = 0,
     lane: i64 = -1,
+    serialized_name: u8[..64] = [],
 }
 
-// Numeric lane identity is available on Owner; named serialized registration arrives in E6.S3.
+// Only the configured process-wide native owner receives a nonempty serialized identity.
 fn is_serialized(owner: Owner, lane: u8[:]) -> bool {
-    return false;
+    return owner.lane == 0 && owner.serialized_name.len > 0 && owner.serialized_name == lane;
 }
 
 enum HookResult {

@@ -136,7 +136,10 @@ fn lane_work_matches<R>(start: LaneStart, work: ExecWork, plan: RoutePlan<R>) ->
         return false;
     }
     return match plan.entries[selected.route_id].options.execution {
+        Inherit => false,
         Inline => false,
         Lane lane => lane.index == start.lane && work.lane == start.lane,
+        Serialized selected => start.lane == 0 && work.lane == 0
+            && selected.lane == start.options.serialized_name && valid_serialized_name(selected.lane),
     };
 }

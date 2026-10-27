@@ -26,7 +26,9 @@ fn add<R>(router: Router<R>&, method: u8[:], path: u8[:], action: R, options: Ro
     }
     conflicting_route(router, method, joined, segments);
     if router.issue.error == RouteError.None {
-        retain_route(router, method, joined, action, options, segments);
+        var resolved = options;
+        resolved.execution = inherited_execution(router.current_execution, options.execution);
+        retain_route(router, method, joined, action, resolved, segments);
     }
 }
 
@@ -46,7 +48,8 @@ fn route_registration_ready<R>(router: Router<R>&, method: u8[:], path: u8[:], o
     } else if method.len > router.limits.method_bytes_max || (method.len != 0 && !valid_header_name(method)) {
         route_fail(router, RouteError.InvalidMethod);
     } else if options.body != BodyMode.Buffered || options.body_bytes_max < - 1
-        || !valid_execution_class(options.execution) {
+        || !valid_execution_class(inherited_execution(router.current_execution, options.execution))
+        || inherited_execution(router.current_execution, options.execution) == ExecutionClass.Inherit {
         route_fail(router, RouteError.UnsupportedOptions);
     } else if router.entries.len >= router.limits.routes_max {
         route_fail(router, RouteError.RouteLimit);
@@ -132,6 +135,7 @@ fn scope<R, F>(router: Router<R>&, prefix: u8[:]) {
         let previous_bytes = router.prefix_bytes;
         let previous_policy = router.policy;
         let previous_response_policy = router.current_response_policy;
+        let previous_execution = router.current_execution;
         router.prefix_start = router.bytes.len;
         router.prefix_bytes = joined.len;
         router.bytes.append(joined);
@@ -140,6 +144,7 @@ fn scope<R, F>(router: Router<R>&, prefix: u8[:]) {
         router.prefix_bytes = previous_bytes;
         router.policy = previous_policy;
         router.current_response_policy = previous_response_policy;
+        router.current_execution = previous_execution;
     }
 }
 
@@ -213,4 +218,15 @@ fn any<R>(router: Router<R>&, path: u8[:], action: R, options: RouteOptions) {
 fn any<R>(router: Router<R>&, path: u8[:], action: R) {
     add(router, "", path, action, RouteOptions {
         });
+}
+
+// Scope-local defaults are captured by each registration; explicit Inline remains an override.
+fn execution<R>(router: Router<R>&, policy: ExecutionClass) {
+    if router.prepared {
+        route_fail(router, RouteError.AlreadyPrepared);
+    } else if !valid_execution_class(policy) || policy == ExecutionClass.Inherit {
+        route_fail(router, RouteError.UnsupportedOptions);
+    } else {
+        router.current_execution = policy;
+    }
 }

@@ -60,7 +60,7 @@ fn runtime_local_routes<Tag, R, A, D, H, L, E>(options: ServerOptions,
     D(router, app);
     var plan = prepare(router);
     if plan.issue.error == RouteError.None {
-        plan.issue = runtime_execution_issue(plan, start.executor.lanes);
+        plan.issue = runtime_execution_issue(plan, start.executor);
     }
     if plan.issue.error != RouteError.None {
         var control = silly_transport::Descriptor {
@@ -110,22 +110,32 @@ fn runtime_local_routes<Tag, R, A, D, H, L, E>(options: ServerOptions,
         }, driver, E, dispatch, observe);
 }
 
-fn runtime_execution_issue<R>(plan: RoutePlan<R>, lanes: i64) -> RouteIssue {
+// The named native owner is always lane zero; no fallback to another lane is permitted.
+fn runtime_execution_issue<R>(plan: RoutePlan<R>, options: ExecutorOptions) -> RouteIssue {
     for index in plan.entries.len {
-        match plan.entries[index].options.execution {
-            Lane selected => {
-                if selected.index < 0 || selected.index >= lanes {
-                    return RouteIssue {
-                        error: RouteError.UnsupportedOptions,
-                        route_id: index,
-                        ..
-                    };
-                }
-            },
-            Inline => {
-            },
+        let configured = match plan.entries[index].options.execution {
+            Inline => true,
+            Inherit => false,
+            Lane selected => selected.index >= 0 && selected.index < options.lanes,
+            Serialized selected => options.lanes > 0 && valid_serialized_name(selected.lane)
+                && selected.lane == options.serialized_name,
+        };
+        if !configured {
+            return RouteIssue {
+                error: RouteError.UnsupportedOptions,
+                route_id: index,
+                ..
+            };
         }
     }
     return RouteIssue {
     };
+}
+
+// Compatibility helper for callers validating an unnamed numeric lane inventory.
+fn runtime_execution_issue<R>(plan: RoutePlan<R>, lanes: i64) -> RouteIssue {
+    return runtime_execution_issue(plan, ExecutorOptions {
+            lanes: lanes,
+            ..
+        });
 }
