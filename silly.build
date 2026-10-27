@@ -1,2 +1,2 @@
 // Outbound client libraries belong to the separate client package (E9.S1).
-c_sources = ["native/control.c", "native/transport.c"];
+c_sources = ["native/control.c", "native/files.c", "native/transport.c"];
