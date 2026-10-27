@@ -4,6 +4,7 @@ namespace silly;
 import std;
 
 import.connection;
+import.server_body;
 import.server_io;
 import.server_options;
 import.transport;
@@ -13,6 +14,8 @@ struct ServerStorage {
     input: u8[:],
     head: u8[:],
     body: u8[:],
+    request: u8[:],
+    staging: u8[:],
     fds: i32[:],
     interests: i32[:],
     events: i32[:],
@@ -23,7 +26,8 @@ fn server_loop<D, H>(storage: ServerStorage&, options: ServerOptions,
     var running = true;
     while running {
         prepare_poll(storage, listener, wake);
-        let ready = silly_transport::poll(storage.fds, storage.interests, storage.events, options.poll_timeout_ms);
+        let timeout = server_poll_timeout(storage, options);
+        let ready = silly_transport::poll(storage.fds, storage.interests, storage.events, timeout);
         if ready.status == silly_transport::IoStatus.Interrupted {
             continue;
         }
@@ -87,7 +91,7 @@ fn prepare_poll(storage: ServerStorage&, listener: silly_transport::Descriptor, 
     storage.fds[1] = wake.fd;
     storage.interests[1] = silly_transport::READ;
     for index in storage.connections.len {
-        let connection = storage.connections[index];
+        let connection .= storage.connections[index];
         storage.fds[index + 2] = connection.socket.fd;
         storage.interests[index + 2] = match connection.phase {
             Free => {
@@ -95,6 +99,12 @@ fn prepare_poll(storage: ServerStorage&, listener: silly_transport::Descriptor, 
             },
             Reading => {
                 silly_transport::READ
+            },
+            ReadingBody => {
+                silly_transport::READ
+            },
+            Continue => {
+                silly_transport::WRITE
             },
             Writing => {
                 silly_transport::WRITE
@@ -147,24 +157,51 @@ fn service_connections<D, H>(storage: ServerStorage&, options: ServerOptions, no
             continue;
         }
         let events = storage.events[index + 2];
-        if events == 0 {
+        if events == 0 && !body_pending(connection) {
             continue;
         }
-        let head_start = index * options.response_head_bytes_max;
-        let body_start = index * options.limits.output_bytes_max;
-        let head = storage.head[head_start..head_start + options.response_head_bytes_max];
-        let body = storage.body[body_start..body_start + options.limits.output_bytes_max];
-        let input_before = connection.input_bytes;
+        let buffers = connection_buffers(storage, options, index);
+        let received_before = connection.received_bytes;
+        let staged_before = connection.staged_read;
         let output_before = connection.head_sent + connection.body_sent;
-        if connection.phase == ConnectionPhase.Reading {
-            let start = index * options.limits.head_bytes_max;
-            let input = storage.input[start..start + options.limits.head_bytes_max];
-            read_connection(connection, input, head, body, options, driver, H);
+        let phase_before = connection.phase;
+        if connection.phase == ConnectionPhase.Reading || connection.phase == ConnectionPhase.ReadingBody {
+            read_connection(connection, buffers, options, driver, H);
         } else {
-            write_connection(connection, head, body, options.work_bytes_per_turn);
+            write_connection(connection, buffers.head, buffers.body, options.work_bytes_per_turn);
         }
-        if connection.input_bytes != input_before || connection.head_sent + connection.body_sent != output_before {
+        if connection.received_bytes != received_before || connection.staged_read != staged_before
+            || connection.head_sent + connection.body_sent != output_before
+            || (phase_before == ConnectionPhase.Continue && connection.phase == ConnectionPhase.ReadingBody) {
             connection.active_ms = now;
         }
     }
+}
+
+fn body_pending(connection: Connection&) -> bool {
+    return connection.phase == ConnectionPhase.ReadingBody && connection.staged_read < connection.staged_bytes;
+}
+
+fn server_poll_timeout(storage: ServerStorage, options: ServerOptions) -> i32 {
+    for &connection in storage.connections {
+        if body_pending(connection) {
+            return 0;
+        }
+    }
+    return options.poll_timeout_ms;
+}
+
+fn connection_buffers(storage: ServerStorage, options: ServerOptions, index: i64) -> ConnectionBuffers {
+    let input_start = index * options.limits.head_bytes_max;
+    let head_start = index * options.response_head_bytes_max;
+    let body_start = index * options.limits.output_bytes_max;
+    let request_start = index * options.limits.body_bytes_max;
+    let staging_start = index * server_read_bytes(options);
+    return ConnectionBuffers {
+        input: storage.input[input_start..input_start + options.limits.head_bytes_max],
+        head: storage.head[head_start..head_start + options.response_head_bytes_max],
+        body: storage.body[body_start..body_start + options.limits.output_bytes_max],
+        request: storage.request[request_start..request_start + options.limits.body_bytes_max],
+        staging: storage.staging[staging_start..staging_start + server_read_bytes(options)],
+    };
 }

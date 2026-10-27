@@ -7,6 +7,7 @@ enum BodyMode {
 }
 struct RouteOptions {
     body: BodyMode = BodyMode.Buffered,
+    body_bytes_max: i64 = -1,
 }
 struct RouteLimits {
     routes_max: i64 = 1024,

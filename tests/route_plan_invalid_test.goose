@@ -99,7 +99,7 @@ fn capacities() {
         });
 }
 
-fn options_and_freeze() {
+fn options_and_freeze(options: silly::RouteOptions) {
     var entries: silly::RouteEntry<i64>[>..] = [];
     var segments: silly::RouteSegment[>..] = [];
     var bytes: u8[>..] = [];
@@ -109,9 +109,7 @@ fn options_and_freeze() {
         bytes: bytes,
         ..
     };
-    silly::post(router, "/stream", 1, silly::RouteOptions {
-            body: silly::BodyMode.Streamed
-        });
+    silly::post(router, "/stream", 1, options);
     assert(silly::prepare(router).issue.error == silly::RouteError.UnsupportedOptions);
 }
 
@@ -135,7 +133,14 @@ fn prepared_registration() {
 fn::main() {
     route_plan_invalid_test::syntax();
     route_plan_invalid_test::capacities();
-    route_plan_invalid_test::options_and_freeze();
+    route_plan_invalid_test::options_and_freeze(silly::RouteOptions {
+            body: silly::BodyMode.Streamed,
+            ..
+        });
+    route_plan_invalid_test::options_and_freeze(silly::RouteOptions {
+            body_bytes_max: -2,
+            ..
+        });
     route_plan_invalid_test::prepared_registration();
     print("route declaration failures passed");
 }

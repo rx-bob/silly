@@ -1,12 +1,15 @@
 // Fixed connection descriptors. Slabs are driver-owned; only lengths/offsets survive a turn.
 namespace silly;
 
+import.body_types;
 import.http_head_types;
 import.transport;
 
 enum ConnectionPhase {
     Free,
     Reading,
+    ReadingBody,
+    Continue,
     Writing,
 }
 
@@ -18,6 +21,12 @@ struct Connection {
     scan: HeadScan = HeadScan {
     },
     input_bytes: i64 = 0,
+    request_bytes: i64 = 0,
+    staged_bytes: i64 = 0,
+    staged_read: i64 = 0,
+    received_bytes: i64 = 0,
+    reader: BodyReader = BodyReader {
+    },
     head_bytes: i64 = 0,
     body_bytes: i64 = 0,
     head_sent: i64 = 0,

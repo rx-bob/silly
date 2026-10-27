@@ -1,6 +1,10 @@
 // Core package entry point. Server and handler contracts are specified in docs/public_api.md.
 namespace silly;
 
+import.src.body_reader;
+import.src.body_types;
+import.src.chunk_decoder;
+import.src.chunk_extensions;
 import.src.completion_router;
 import.src.context;
 import.src.continuation;

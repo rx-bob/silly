@@ -12,6 +12,7 @@ import.http_parser;
 import.http_writer;
 import.request;
 import.response;
+import.server_body;
 import.server_options;
 import.state;
 
@@ -25,18 +26,15 @@ checkfree fn copy_server_bytes(target: u8[:], source: u8[:]) {
 }
 
 // All temporary handler views end here. Only copied head/body bytes survive in owning slabs.
-fn build_reply<D, H>(connection: Connection&, input: u8[:], head: u8[:], body: u8[:],
-    options: ServerOptions, driver: D&) {
+fn build_reply<D, H>(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions, driver: D&) {
+    let input = buffers.input[..connection.scan.head_bytes];
+    let head = buffers.head;
+    let body = buffers.body;
     var fields: HeaderView[>..] = [];
     var index: HeaderIndexEntry[>..] = [];
     let parsed = parse_head(input, fields, index, options.limits);
     if parsed.result != HeadResult.Complete {
         build_head_error(connection, head, parsed.result);
-        return;
-    }
-    if parsed.framing == BodyFraming.Chunked || parsed.content_length != 0
-        || find_header(fields, "Expect") >= 0 {
-        build_head_error(connection, head, HeadResult.UnsupportedBody);
         return;
     }
     var response_fields: HeaderField[>..] = [];
@@ -56,6 +54,10 @@ fn build_reply<D, H>(connection: Connection&, input: u8[:], head: u8[:], body: u
             target: parsed.target,
             headers: fields,
             header_index: index,
+            body_framing: parsed.framing,
+            body_state: RequestBody.Buffered {
+                bytes: buffers.request[..connection.request_bytes]
+            },
             ..
         };
         var app = NoState {
@@ -88,7 +90,10 @@ fn build_reply<D, H>(connection: Connection&, input: u8[:], head: u8[:], body: u
 }
 
 fn build_head_error(connection: Connection&, head: u8[:], result: HeadResult) {
-    let status = head_status(result);
+    build_status_error(connection, head, head_status(result));
+}
+
+fn build_status_error(connection: Connection&, head: u8[:], status: i32) {
     assert(status >= 400);
     let bytes = str("HTTP/1.1 ", status, " ", response_reason(status),
         "\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");

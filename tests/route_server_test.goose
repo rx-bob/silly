@@ -74,6 +74,7 @@ thread_fn serve(listener: i32, wake: i32) {
     let options = silly::ServerOptions {
         port: 0,
         limits: silly::Limits {
+            body_bytes_max: 0,
             output_bytes_max: 32,
             ..
         },

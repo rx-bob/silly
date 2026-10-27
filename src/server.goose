@@ -47,6 +47,8 @@ fn run_server_state<D, H>(options: ServerOptions, listener: silly_transport::Des
     var input: u8[>..] = [];
     var head: u8[>..] = [];
     var body: u8[>..] = [];
+    var request: u8[>..] = [];
+    var staging: u8[>..] = [];
     var fds: i32[>..] = [];
     var interests: i32[>..] = [];
     var events: i32[>..] = [];
@@ -55,6 +57,8 @@ fn run_server_state<D, H>(options: ServerOptions, listener: silly_transport::Des
     input.resize(options.connections_max * options.limits.head_bytes_max, 0);
     head.resize(options.connections_max * options.response_head_bytes_max, 0);
     body.resize(options.connections_max * options.limits.output_bytes_max, 0);
+    request.resize(options.connections_max * options.limits.body_bytes_max, 0);
+    staging.resize(options.connections_max * server_read_bytes(options), 0);
     fds.resize(options.connections_max + 2, -1);
     interests.resize(options.connections_max + 2, 0);
     events.resize(options.connections_max + 2, 0);
@@ -63,6 +67,8 @@ fn run_server_state<D, H>(options: ServerOptions, listener: silly_transport::Des
         input: input,
         head: head,
         body: body,
+        request: request,
+        staging: staging,
         fds: fds,
         interests: interests,
         events: events,

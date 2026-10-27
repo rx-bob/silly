@@ -100,6 +100,12 @@ fn response_reason(status: i32) -> const u8[:] {
     if status == 431 {
         return "Request Header Fields Too Large";
     }
+    if status == 413 {
+        return "Content Too Large";
+    }
+    if status == 417 {
+        return "Expectation Failed";
+    }
     if status == 414 {
         return "URI Too Long";
     }

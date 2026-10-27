@@ -3,6 +3,7 @@ namespace silly;
 
 import.header_index;
 import.headers;
+import.http_head_types;
 import.limits;
 
 const EMPTY_REQUEST_HEADERS: HeaderView[0] = [];
@@ -34,6 +35,7 @@ struct Request {
     target: const u8[:],
     headers: const HeaderView[:] = EMPTY_REQUEST_HEADERS,
     header_index: const HeaderIndexEntry[:] = EMPTY_HEADER_INDEX,
+    body_framing: BodyFraming = BodyFraming.None,
     body_state: RequestBody = RequestBody.Buffered {
         bytes: ""
     },

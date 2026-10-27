@@ -40,13 +40,15 @@ fn arithmetic_bounds() {
     var options = silly::ServerOptions {
         limits: silly::Limits {
             head_bytes_max: 64,
+            body_bytes_max: 0,
             output_bytes_max: 256,
             ..
         },
         connections_max: 2,
         response_head_bytes_max: 128,
-        buffer_bytes_max: 896,
+        buffer_bytes_max: 1024,
         accepts_per_turn: 2,
+        body_read_bytes_max: 64,
         ..
     };
     assert(silly::valid_server_options(options));
@@ -200,7 +202,38 @@ fn connection_pressure() {
     assert(silly_transport::close(pair.reader).status == silly_transport::IoStatus.Ready);
 }
 
+fn interim_writes() {
+    var pair = silly_transport::wake_pair();
+    assert(pair.status == silly_transport::IoStatus.Ready);
+    let head = "HTTP/1.1 100 Continue\r\n\r\n";
+    var connection = silly::Connection {
+        socket: pair.writer,
+        phase: silly::ConnectionPhase.Continue,
+        head_bytes: head.len,
+        ..
+    };
+    pair.writer.fd = -1;
+    for step in 4 {
+        silly::write_connection(connection, head, "", 7);
+        if step < 3 {
+            assert(connection.phase == silly::ConnectionPhase.Continue);
+            assert(connection.head_sent == (step + 1) * 7);
+        }
+    }
+    assert(connection.phase == silly::ConnectionPhase.ReadingBody);
+    assert(connection.head_sent == 0);
+    assert(connection.head_bytes == 0);
+    var received: u8[25] = [0; 25];
+    let result = silly_transport::read(pair.reader, received);
+    assert(result.status == silly_transport::IoStatus.Ready);
+    assert(result.count == head.len);
+    assert(received == head);
+    silly::release_connection(connection);
+    silly_transport::close(pair.reader);
+}
+
 fn::main() {
+    server_state_test::interim_writes();
     server_state_test::option_bounds();
     server_state_test::arithmetic_bounds();
     server_state_test::generation_availability();
