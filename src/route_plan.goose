@@ -14,6 +14,7 @@ fn prepare<R>(router: Router<R>&) -> RoutePlan<R> {
         bytes: router.bytes,
         limits: router.limits,
         issue: router.issue,
+        response_policies: router.response_policies,
     };
 }
 

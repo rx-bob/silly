@@ -14,14 +14,22 @@ import.http_writer;
 import.lifecycle_types;
 import.response;
 import.response_errors;
+import.response_policy;
 import.server_body;
 import.server_buffers;
 import.server_observer;
 import.server_options;
+import.server_policy;
 import.server_request_errors;
 import.state;
 import.transport;
 import.wire_transfer;
+
+struct AdmittedHead {
+    parsed: ParsedHead,
+    fields: const HeaderView[:],
+    admission: BodyAdmission,
+}
 
 fn read_connection<D, H, E, O>(connection: Connection&, buffers: ConnectionBuffers,
     options: ServerOptions, driver: D&) {
@@ -94,10 +102,25 @@ fn begin_request_body<D, H, E, O>(connection: Connection&, buffers: ConnectionBu
     }
     connection.http_minor = parsed.http_minor;
     connection.close_after_reply = !request_persistent(fields, parsed.http_minor);
+    connection.response_policy = resolve_response_policy(driver, parsed, fields);
     let cap = min(options.limits.body_bytes_max, options.body_limits.bytes_max);
     let admission = body_admission(driver, parsed, cap);
     connection.completion.route_id = admission.route_id;
     connection.completion.selection = admission.selection;
+    if finish_policy_request(connection, buffers, options, parsed, E) {
+        return;
+    }
+    continue_request_body(connection, buffers, options, AdmittedHead {
+            parsed: parsed,
+            fields: fields,
+            admission: admission,
+        }, driver, H, E, O);
+}
+
+fn continue_request_body<D, H, E, O>(connection: Connection&, buffers: ConnectionBuffers,
+    options: ServerOptions, head: AdmittedHead, driver: D&) {
+    let parsed = head.parsed;
+    let admission = head.admission;
     if admission.complete_response {
         // Generated method responses precede 100 Continue. Unread bodies prohibit reuse.
         if parsed.framing == BodyFraming.Chunked || parsed.content_length > 0 {
@@ -106,7 +129,7 @@ fn begin_request_body<D, H, E, O>(connection: Connection&, buffers: ConnectionBu
         build_reply(connection, buffers, options, driver, H, E, O);
         return;
     }
-    let expectation = request_expectation(fields);
+    let expectation = request_expectation(head.fields);
     var status = admission.status;
     if status == 0 && expectation == 417 {
         status = 417;

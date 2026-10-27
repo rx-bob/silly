@@ -6,6 +6,7 @@ import.headers;
 import.http_head_types;
 import.http_headers;
 import.lifecycle_types;
+import.response_policy_types;
 import.transport;
 
 enum ConnectionPhase {
@@ -40,6 +41,8 @@ struct Connection {
     completion: CompletionData = CompletionData {
     },
     completion_pending: bool = false,
+    response_policy: ResponsePolicyState = ResponsePolicyState {
+    },
 }
 
 fn release_connection(connection: Connection&) {

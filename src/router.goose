@@ -97,6 +97,7 @@ fn retain_route<R>(router: Router<R>&, method: u8[:], path: u8[:], action: R,
             action: action,
             options: options,
             policy: router.policy,
+            response_policy: router.current_response_policy,
         });
 }
 
@@ -128,6 +129,7 @@ fn scope<R, F>(router: Router<R>&, prefix: u8[:]) {
         let previous_start = router.prefix_start;
         let previous_bytes = router.prefix_bytes;
         let previous_policy = router.policy;
+        let previous_response_policy = router.current_response_policy;
         router.prefix_start = router.bytes.len;
         router.prefix_bytes = joined.len;
         router.bytes.append(joined);
@@ -135,6 +137,7 @@ fn scope<R, F>(router: Router<R>&, prefix: u8[:]) {
         router.prefix_start = previous_start;
         router.prefix_bytes = previous_bytes;
         router.policy = previous_policy;
+        router.current_response_policy = previous_response_policy;
     }
 }
 

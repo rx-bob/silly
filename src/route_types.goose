@@ -1,6 +1,8 @@
 // Fixed metadata and borrowed startup/prepared routing owners.
 namespace silly;
 
+import.response_policy_types;
+
 enum BodyMode {
     Buffered,
     Streamed,
@@ -22,6 +24,7 @@ struct RouteLimits {
     storage_bytes_max: i64 = 1048576,
     compiled_segments_max: i64 = 16384,
     method_bytes_max: i64 = 32,
+    response_policies_max: i64 = 128,
 }
 enum RouteError {
     None,
@@ -40,6 +43,8 @@ enum RouteError {
     StorageLimit,
     UnsupportedOptions,
     AlreadyPrepared,
+    InvalidPolicy,
+    PolicyLimit,
 }
 struct RouteIssue {
     error: RouteError = RouteError.None,
@@ -68,6 +73,7 @@ struct RouteEntry<R> {
     options: RouteOptions,
     policy: RoutePolicy = RoutePolicy {
     },
+    response_policy: i64 = -1,
 }
 struct Router<R> {
     entries: RouteEntry<R>[>..]&,
@@ -82,6 +88,8 @@ struct Router<R> {
     prepared: bool = false,
     policy: RoutePolicy = RoutePolicy {
     },
+    current_response_policy: i64 = -1,
+    response_policies: ResponsePolicyEntry[>..] = [],
 }
 struct RoutePlan<R> {
     entries: const RouteEntry<R>[:],
@@ -89,6 +97,7 @@ struct RoutePlan<R> {
     bytes: const u8[:],
     limits: RouteLimits,
     issue: RouteIssue,
+    response_policies: const ResponsePolicyEntry[:] = EMPTY_RESPONSE_POLICIES,
 }
 enum RouteMatchResult {
     Matched,
@@ -109,7 +118,7 @@ struct RouteMatch {
 fn valid_route_limits(limits: RouteLimits) -> bool {
     return limits.routes_max >= 0 && limits.path_bytes_max > 0 && limits.segments_max >= 0
         && limits.captures_max >= 0 && limits.storage_bytes_max >= 0
-        && limits.compiled_segments_max >= 0 && limits.method_bytes_max > 0;
+        && limits.compiled_segments_max >= 0 && limits.method_bytes_max > 0 && limits.response_policies_max >= 0;
 }
 
 fn route_fail<R>(router: Router<R>&, error: RouteError, conflicting: i64 = -1) {

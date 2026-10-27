@@ -9,11 +9,13 @@ import.header_index;
 import.headers;
 import.http_head_types;
 import.http_parser;
+import.http_request_line;
 import.http_writer;
 import.lifecycle_types;
 import.request;
 import.response;
 import.response_errors;
+import.response_policy_headers;
 import.response_wire_types;
 import.server_body;
 import.server_observer;
@@ -99,6 +101,14 @@ fn application_reply<D, H, O>(connection: Connection&, buffers: ConnectionBuffer
     if failure.error != ResponseError.None {
         return failure;
     }
+    let policy_error = apply_response_policy(response, connection.response_policy);
+    if policy_error != ResponseError.None {
+        return ResponseFailure {
+            kind: ResponseFailureKind.Serialization,
+            error: policy_error,
+            ..
+        };
+    }
     let error = stage_reply(connection, buffers, response, wire_options, options.response_head_bytes_max);
     return ResponseFailure {
         kind: if error == ResponseError.None {
@@ -123,15 +133,20 @@ fn render_reply<E>(connection: Connection&, buffers: ConnectionBuffers, options:
         output: output,
         ..
     };
-    E(response, failure);
+    E(response, scoped_response_failure(connection, buffers.input, failure));
     if response_failure(response).error != ResponseError.None {
         build_failure(connection, buffers.head, wire_options.http_minor);
+        return;
+    }
+    let minor = wire_options.http_minor;
+    if apply_response_policy(response, connection.response_policy) != ResponseError.None {
+        build_failure(connection, buffers.head, minor);
         return;
     }
     let error = stage_reply(connection, buffers, response, wire_options, options.response_head_bytes_max);
     if error != ResponseError.None {
         // Renderer failure has one deterministic fallback; never recurse into application code.
-        build_failure(connection, buffers.head, wire_options.http_minor);
+        build_failure(connection, buffers.head, minor);
     }
 }
 
@@ -196,4 +211,25 @@ fn empty_reply(ctx: BufferedContext&, status: i32) {
     if begin_response(ctx.response, status) == ResponseError.None {
         prepare_response(ctx.response);
     }
+}
+
+// Renderers receive bounded owned routing metadata, never borrowed request/header storage.
+fn scoped_response_failure(connection: Connection&, input: u8[:], failure: ResponseFailure) -> ResponseFailure {
+    var scoped = failure;
+    scoped.error_policy = connection.response_policy.error_policy;
+    scoped.audit = connection.completion.audit;
+    scoped.method.clear();
+    scoped.target.clear();
+    scoped.method_truncated = false;
+    scoped.target_truncated = false;
+    if connection.scan.request_line_end >= 0 {
+        let parsed = parse_request_line(input[..connection.scan.request_line_end]);
+        if parsed.result == HeadResult.Complete {
+            scoped.method.append(parsed.method[..min(parsed.method.len, scoped.method.cap)]);
+            scoped.target.append(parsed.target[..min(parsed.target.len, scoped.target.cap)]);
+            scoped.method_truncated = parsed.method.len > scoped.method.cap;
+            scoped.target_truncated = parsed.target.len > scoped.target.cap;
+        }
+    }
+    return scoped;
 }

@@ -3,6 +3,7 @@ namespace silly;
 
 import.body_types;
 import.http_head_types;
+import.lifecycle_types;
 import.response;
 import.transport;
 
@@ -25,6 +26,13 @@ struct ResponseFailure {
     body_error: BodyStatus = BodyStatus.Complete,
     transport_status: silly_transport::IoStatus = silly_transport::IoStatus.Ready,
     system_error: i32 = 0,
+    error_policy: i64 = 0,
+    method: u8[..32] = [],
+    target: u8[..8192] = [],
+    method_truncated: bool = false,
+    target_truncated: bool = false,
+    audit: AuditRecord = AuditRecord {
+    },
 }
 
 fn default_response_error(response: Response&, failure: ResponseFailure) {
