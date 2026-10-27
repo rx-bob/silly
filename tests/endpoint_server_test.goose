@@ -132,6 +132,11 @@ fn cleanup(app: App&, outcome: silly::HandlerOutcome) {
 }
 
 fn render(response: silly::Response&, failure: silly::ResponseFailure) {
+    if failure.kind == silly::ResponseFailureKind.Admission {
+        assert(failure.status == 404);
+        silly::default_response_error(response, failure);
+        return;
+    }
     assert(failure.kind == silly::ResponseFailureKind.HandlerFailure);
     assert(failure.error == silly::ResponseError.OutputLimit);
     assert(response.phase == silly::ResponsePhase.Empty);
@@ -185,7 +190,7 @@ thread_fn serve(listener: i32, wake: i32) {
 
 fn request(port: i32, path: u8[:]) -> u8[>..] {
     var socket = body_socket::connect(port);
-    body_socket::send_bytes(socket, str("GET ", path, " HTTP/1.1\r\nHost: localhost\r\n\r\n"));
+    body_socket::send_bytes(socket, str("GET ", path, " HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"));
     let response = body_socket::receive_closed(socket);
     silly_transport::close(socket);
     return response;

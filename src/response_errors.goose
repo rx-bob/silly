@@ -1,19 +1,30 @@
 // Precommit response failures are rendered into fresh bounded owners, without transport access.
 namespace silly;
 
+import.body_types;
+import.http_head_types;
 import.response;
+import.transport;
 
 enum ResponseFailureKind {
     None,
     MissingResponse,
     HandlerFailure,
     Serialization,
+    RequestHead,
+    RequestBody,
+    Admission,
+    Timeout,
 }
 
 struct ResponseFailure {
     kind: ResponseFailureKind = ResponseFailureKind.None,
     status: i32 = 500,
     error: ResponseError = ResponseError.None,
+    head_error: HeadResult = HeadResult.Complete,
+    body_error: BodyStatus = BodyStatus.Complete,
+    transport_status: silly_transport::IoStatus = silly_transport::IoStatus.Ready,
+    system_error: i32 = 0,
 }
 
 fn default_response_error(response: Response&, failure: ResponseFailure) {

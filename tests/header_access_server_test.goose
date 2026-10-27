@@ -22,7 +22,7 @@ struct Stopped {
 
 fn inspect_fields(ctx: Context&) {
     assert(ctx.request.header_index.len == ctx.request.headers.len);
-    assert(ctx.request.header_index.len == 9);
+    assert(ctx.request.header_index.len == 10);
     let wire = valid_request();
     for entry in ctx.request.header_index {
         let source = entry.source;
@@ -68,7 +68,8 @@ fn handle(ctx: Context&) {
 fn valid_request() -> u8[>..] {
     return str("GET /headers HTTP/1.1\r\nHost: localhost\r\nAuthorization: \tBearer session \t\r\n",
         "X-Mcp-User-Id: first \r\nx-mcp-user-id:\tsecond\t\r\nX-Zitadel-User-Id: unverified-id\r\n",
-        "X-Forwarded-User: unverified-user \r\nX-Empty:\r\nX-Whitespace: \t \r\nX-Arbitrary: a,b,c\r\n\r\n");
+        "X-Forwarded-User: unverified-user \r\nX-Empty:\r\nX-Whitespace: \t \r\nX-Arbitrary: a,b,c\r\n",
+        "Connection: close\r\n\r\n");
 }
 
 thread_fn serve(listener: i32, wake: i32) {

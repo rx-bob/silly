@@ -172,7 +172,7 @@ fn rejected(port: i32, request: u8[:], status: i32) {
 
 fn valid_fragments(port: i32, expected: i64) {
     var client = connect(port);
-    let request = "GET /ok HTTP/1.1\r\nHost: localhost\r\nX-Raw:  value \t\r\n\r\n";
+    let request = "GET /ok HTTP/1.1\r\nHost: localhost\r\nX-Raw:  value \t\r\nConnection: close\r\n\r\n";
     for index in request.len {
         send_bytes(client, request[index..index + 1]);
     }

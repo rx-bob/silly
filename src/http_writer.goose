@@ -170,6 +170,9 @@ fn response_reason(status: i32) -> const u8[:] {
     if status == 400 {
         return "Bad Request";
     }
+    if status == 408 {
+        return "Request Timeout";
+    }
     if status == 404 {
         return "Not Found";
     }

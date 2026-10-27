@@ -134,7 +134,8 @@ fn request(port: i32, path: u8[:], body: u8[:], media: u8[:] = "application/json
         } else {
             "POST"
         }, " ", path,
-        " HTTP/1.1\r\nHost: localhost\r\nContent-Type: ", media, "\r\nContent-Length: ", body.len, "\r\n\r\n", body));
+        " HTTP/1.1\r\nHost: localhost\r\n",
+        "Connection: close\r\nContent-Type: ", media, "\r\nContent-Length: ", body.len, "\r\n\r\n", body));
     let response = body_socket::receive_closed(socket);
     silly_transport::close(socket);
     return response;

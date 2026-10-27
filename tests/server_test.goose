@@ -95,7 +95,7 @@ fn connect(port: i32) -> silly_transport::Descriptor {
 }
 
 fn send_request(socket: silly_transport::Descriptor, path: u8[:]) {
-    let request = str("GET ", path, " HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    let request = str("GET ", path, " HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
     let deadline = now() + DEADLINE_MS;
     var offset = 0;
     while offset < request.len {

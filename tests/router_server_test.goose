@@ -127,7 +127,7 @@ thread_fn serve(listener: i32, wake: i32) {
 fn request(port: i32, method: u8[:], path: u8[:], body: u8[:] = "") -> u8[>..] {
     var socket = body_socket::connect(port);
     body_socket::send_bytes(socket, str(method, " ", path,
-        " HTTP/1.1\r\nHost: localhost\r\nContent-Length: ", body.len, "\r\n\r\n", body));
+        " HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\nContent-Length: ", body.len, "\r\n\r\n", body));
     let response = body_socket::receive_closed(socket);
     silly_transport::close(socket);
     return response;
@@ -144,7 +144,7 @@ fn early_methods(port: i32) {
     for method in["PUT", "OPTIONS"] {
         var socket = body_socket::connect(port);
         body_socket::send_bytes(socket, str(method, " /api/users/x HTTP/1.1\r\n",
-            "Host: localhost\r\nContent-Length: 999999\r\nExpect: 100-continue\r\n\r\n"));
+            "Host: localhost\r\nConnection: close\r\nContent-Length: 999999\r\nExpect: 100-continue\r\n\r\n"));
         let response = body_socket::receive_closed(socket);
         exact(response, if method == "PUT" {
                 405

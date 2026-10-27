@@ -51,6 +51,7 @@ fn build_reply<D, H, E>(connection: Connection&, buffers: ConnectionBuffers, opt
     let wire_options = ResponseWireOptions {
         http_minor: parsed.http_minor,
         request_method: parsed.method,
+        close: connection.close_after_reply,
         ..
     };
     let failure = application_reply(connection, buffers, options, request, wire_options, driver, H);
@@ -135,6 +136,7 @@ fn stage_reply(connection: Connection&, buffers: ConnectionBuffers, response: Re
     }
     copy_server_bytes(buffers.head, wire);
     copy_server_bytes(buffers.body, response.output[..plan.body_bytes]);
+    connection.close_after_reply = plan.close;
     connection.head_bytes = wire.len;
     connection.body_bytes = plan.body_bytes;
     connection.head_sent = 0;
@@ -148,6 +150,7 @@ fn build_head_error(connection: Connection&, head: u8[:], result: HeadResult) {
 }
 
 fn build_status_error(connection: Connection&, head: u8[:], status: i32) {
+    connection.close_after_reply = true;
     assert(status >= 400);
     let bytes = str("HTTP/1.", connection.http_minor, " ", status, " ", response_reason(status),
         "\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
@@ -160,6 +163,7 @@ fn build_status_error(connection: Connection&, head: u8[:], status: i32) {
 }
 
 fn build_failure(connection: Connection&, head: u8[:], http_minor: i32 = 1) {
+    connection.close_after_reply = true;
     let bytes = str("HTTP/1.", http_minor,
         " 500 Internal Server Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
     copy_server_bytes(head, bytes);

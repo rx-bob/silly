@@ -183,7 +183,7 @@ fn receive_closed(socket: silly_transport::Descriptor) -> u8[>..] {
 
 fn request(port: i32, method: u8[:], path: u8[:], status: i32, body: u8[:]) {
     var client = connect(port);
-    send_bytes(client, str(method, " ", path, " HTTP/1.1\r\nHost: localhost\r\n\r\n"));
+    send_bytes(client, str(method, " ", path, " HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"));
     let response = receive_closed(client);
     assert(starts_with(response, str("HTTP/1.1 ", status, " ")));
     let separator = find(response, "\r\n\r\n");

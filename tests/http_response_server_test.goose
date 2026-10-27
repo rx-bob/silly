@@ -105,6 +105,12 @@ fn render(response: silly::Response&, failure: silly::ResponseFailure) {
     assert(response.output.len == 0);
     assert(response.header_fields.len == 0);
     assert(response.header_bytes.len == 0);
+    if failure.kind == silly::ResponseFailureKind.Admission {
+        assert(failure.status == 404);
+        plain(response, 404, "");
+        assert(silly::prepare_response(response) == silly::ResponseError.None);
+        return;
+    }
     assert(failure.status == 500);
     if failure.kind == silly::ResponseFailureKind.MissingResponse {
         assert(failure.error == silly::ResponseError.MissingResponse);
@@ -176,7 +182,8 @@ thread_fn serve(listener: i32, wake: i32, custom: bool) {
 
 fn request(port: i32, method: u8[:], path: u8[:], minor: i32 = 1) -> u8[>..] {
     var socket = body_socket::connect(port);
-    body_socket::send_bytes(socket, str(method, " ", path, " HTTP/1.", minor, "\r\nHost: localhost\r\n\r\n"));
+    body_socket::send_bytes(socket, str(method, " ", path, " HTTP/1.", minor,
+        "\r\nHost: localhost\r\nConnection: close\r\n\r\n"));
     let response = body_socket::receive_closed(socket);
     silly_transport::close(socket);
     return response;
@@ -253,7 +260,7 @@ fn run(custom: bool) {
     assert(present);
     assert(stopped.ok);
     if custom {
-        assert(stopped.rendered == 7);
+        assert(stopped.rendered == 8);
     } else {
         assert(stopped.rendered == 0);
     }

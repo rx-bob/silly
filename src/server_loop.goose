@@ -7,6 +7,7 @@ import.connection;
 import.server_body;
 import.server_io;
 import.server_options;
+import.server_request_errors;
 import.transport;
 
 struct ServerStorage {
@@ -153,11 +154,12 @@ fn service_connections<D, H, E>(storage: ServerStorage&, options: ServerOptions,
             continue;
         }
         if now < connection.active_ms || now - connection.active_ms >= options.idle_timeout_ms {
-            release_connection(connection);
+            request_timeout(connection, connection_buffers(storage, options, index), options, E);
+            connection.active_ms = now;
             continue;
         }
         let events = storage.events[index + 2];
-        if events == 0 && !body_pending(connection) {
+        if events == 0 && !input_pending(connection) {
             continue;
         }
         let buffers = connection_buffers(storage, options, index);
@@ -172,19 +174,20 @@ fn service_connections<D, H, E>(storage: ServerStorage&, options: ServerOptions,
         }
         if connection.received_bytes != received_before || connection.staged_read != staged_before
             || connection.head_sent + connection.body_sent != output_before
-            || (phase_before == ConnectionPhase.Continue && connection.phase == ConnectionPhase.ReadingBody) {
+            || connection.phase != phase_before {
             connection.active_ms = now;
         }
     }
 }
 
-fn body_pending(connection: Connection&) -> bool {
-    return connection.phase == ConnectionPhase.ReadingBody && connection.staged_read < connection.staged_bytes;
+fn input_pending(connection: Connection&) -> bool {
+    return (connection.phase == ConnectionPhase.Reading || connection.phase == ConnectionPhase.ReadingBody)
+        && connection.staged_read < connection.staged_bytes;
 }
 
 fn server_poll_timeout(storage: ServerStorage, options: ServerOptions) -> i32 {
     for &connection in storage.connections {
-        if body_pending(connection) {
+        if input_pending(connection) {
             return 0;
         }
     }

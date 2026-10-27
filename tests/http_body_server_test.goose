@@ -142,13 +142,15 @@ fn large_bodies(port: i32) {
         payload.push((index % 251)as u8);
     }
     var client = body_socket::connect(port);
-    body_socket::send_bytes(client, "POST /large HTTP/1.1\r\nHost: x\r\nContent-Length: 262145\r\n\r\n");
+    body_socket::send_bytes(client,
+        "POST /large HTTP/1.1\r\nHost: x\r\nConnection: close\r\nContent-Length: 262145\r\n\r\n");
     body_socket::send_bytes(client, payload);
     body_socket::valid_response(client);
     counted(1);
     silly_transport::close(client);
     client = body_socket::connect(port);
-    body_socket::send_bytes(client, "POST /large HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n");
+    body_socket::send_bytes(client,
+        "POST /large HTTP/1.1\r\nHost: x\r\nConnection: close\r\nTransfer-Encoding: chunked\r\n\r\n");
     let prefix = "40001;name=\"quoted;value\"\r\n";
     for index in prefix.len {
         body_socket::send_bytes(client, prefix[index..index + 1]);
@@ -164,15 +166,16 @@ fn large_bodies(port: i32) {
 }
 
 fn empty_bodies(port: i32) {
-    simple(port, "POST /none HTTP/1.1\r\nHost: x\r\n\r\n", 3);
-    simple(port, "POST /fixed-zero HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\n", 4);
-    simple(port, "POST /chunked-zero HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n", 5);
+    simple(port, "POST /none HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n", 3);
+    simple(port, "POST /fixed-zero HTTP/1.1\r\nHost: x\r\nConnection: close\r\nContent-Length: 0\r\n\r\n", 4);
+    simple(port, str("POST /chunked-zero HTTP/1.1\r\nHost: x\r\nConnection: close\r\n",
+        "Transfer-Encoding: chunked\r\n\r\n0\r\n\r\n"), 5);
 }
 
 fn continue_body(port: i32) {
     var client = body_socket::connect(port);
     body_socket::send_bytes(client,
-        "POST /small HTTP/1.1\r\nHost: x\r\nContent-Length: 3\r\nExpect: 100-continue\r\n\r\n");
+        "POST /small HTTP/1.1\r\nHost: x\r\nConnection: close\r\nContent-Length: 3\r\nExpect: 100-continue\r\n\r\n");
     body_socket::interim(client);
     let event, present = qpoll<Handled>();
     assert(!present);
@@ -204,13 +207,14 @@ fn unfinished_bodies(port: i32) {
     silly_transport::close(client);
     client = body_socket::connect(port);
     body_socket::send_bytes(client, "POST /small HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n3\r\na");
-    // A stalled body closes at the independent inactivity deadline without dispatch.
+    // A stalled body renders a timeout at the inactivity deadline without dispatch.
     let response = body_socket::receive_closed(client);
-    assert(response.len == 0);
+    assert(starts_with(response, "HTTP/1.1 408 "));
+    assert(find(response, "Connection: close\r\n") >= 0);
     silly_transport::close(client);
     let event, present = qpoll<Handled>();
     assert(!present);
-    simple(port, "POST /small HTTP/1.1\r\nHost: x\r\nContent-Length: 3\r\n\r\nabc", 8);
+    simple(port, "POST /small HTTP/1.1\r\nHost: x\r\nConnection: close\r\nContent-Length: 3\r\n\r\nabc", 8);
 }
 
 fn run() {

@@ -59,7 +59,8 @@ thread_fn serve(listener: i32, wake: i32) {
 
 fn request(port: i32, path: u8[:], body: u8[:], media: u8[:] = "application/x-www-form-urlencoded") -> u8[>..] {
     var socket = body_socket::connect(port);
-    body_socket::send_bytes(socket, str("POST ", path, " HTTP/1.1\r\nHost: localhost\r\nContent-Type: ", media,
+    body_socket::send_bytes(socket, str("POST ", path, " HTTP/1.1\r\nHost: localhost\r\n",
+        "Connection: close\r\nContent-Type: ", media,
         "\r\nContent-Length: ", body.len, "\r\n\r\n", body));
     let response = body_socket::receive_closed(socket);
     silly_transport::close(socket);
@@ -75,7 +76,7 @@ fn exact(response: u8[:], status: i32, body: u8[:]) {
 
 fn thanks(port: i32) {
     var socket = body_socket::connect(port);
-    body_socket::send_bytes(socket, "GET /thanks HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    body_socket::send_bytes(socket, "GET /thanks HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
     exact(body_socket::receive_closed(socket), 200, "Thanks, Ada Lovelace!");
     silly_transport::close(socket);
 }
@@ -104,7 +105,7 @@ fn verify(port: i32) {
     exact(request(port, "/submit", excessive), 413, "");
     thanks(port);
     var huge = body_socket::connect(port);
-    body_socket::send_bytes(huge, str("POST /submit HTTP/1.1\r\nHost: localhost\r\n",
+    body_socket::send_bytes(huge, str("POST /submit HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n",
         "Content-Type: application/x-www-form-urlencoded\r\nContent-Length: 1025\r\n",
         "Expect: 100-continue\r\n\r\n"));
     let rejected = body_socket::receive_closed(huge);

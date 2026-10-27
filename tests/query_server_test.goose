@@ -81,7 +81,7 @@ thread_fn serve(listener: i32, wake: i32) {
 
 fn request(port: i32, target: u8[:], status: i32, expected: u8[:]) {
     var socket = body_socket::connect(port);
-    body_socket::send_bytes(socket, str("GET ", target, " HTTP/1.1\r\nHost: localhost\r\n\r\n"));
+    body_socket::send_bytes(socket, str("GET ", target, " HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"));
     let response = body_socket::receive_closed(socket);
     assert(starts_with(response, str("HTTP/1.1 ", status, " ")));
     let end = find(response, "\r\n\r\n");
