@@ -15,6 +15,7 @@ struct ResponseWireOptions {
     request_method: const u8[:] = "GET",
     close: bool = true,
     representation_length: i64 = -1,
+    stream_length: i64 = -1,
 }
 
 struct ResponseWirePlan {

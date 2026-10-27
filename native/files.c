@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 typedef struct { uint8_t *data; int64_t len; } files_bytes;
@@ -21,6 +22,7 @@ enum { F_FREE, F_OPEN_QUEUE, F_OPEN_BUSY, F_IDLE, F_READ_QUEUE, F_READ_BUSY,
 struct files_slot {
     int state, cancelled, fd, root_fd, error;
     int64_t token, size, offset, requested, count;
+    int64_t modified_seconds, modified_nanoseconds, observed_seconds, device, inode;
     char path[FILES_PATH + 1];
     uint8_t bytes[FILES_CHUNK];
 };
@@ -83,7 +85,7 @@ static int files_decode(const char *input, char *output) {
 }
 
 // Consumes the pinned root duplicate on every path. Each component is opened without symlinks.
-static int files_walk(int root, const char *encoded, int64_t *size, int *error) {
+static int files_walk(int root, const char *encoded, int64_t *size, int *error, struct files_slot *slot) {
     char path[FILES_PATH + 1];
     *error = files_decode(encoded, path);
     if (*error) { files_close(root); return -1; }
@@ -111,6 +113,17 @@ static int files_walk(int root, const char *encoded, int64_t *size, int *error) 
                 *error = EOVERFLOW; files_close(next); return -1;
             }
             *size = (int64_t)metadata.st_size;
+#ifdef __APPLE__
+            slot->modified_seconds = metadata.st_mtimespec.tv_sec;
+            slot->modified_nanoseconds = metadata.st_mtimespec.tv_nsec;
+#else
+            slot->modified_seconds = metadata.st_mtim.tv_sec;
+            slot->modified_nanoseconds = metadata.st_mtim.tv_nsec;
+#endif
+            // The busy slot remains pinned; publishing fd under files_lock publishes this snapshot.
+            slot->device = (int64_t)metadata.st_dev;
+            slot->inode = (int64_t)metadata.st_ino;
+            slot->observed_seconds = (int64_t)time(NULL);
             return next;
         }
         root = next;
@@ -180,7 +193,7 @@ static void *files_worker(void *unused) {
         pthread_mutex_unlock(&files_lock);
         int opened = -1, error = 0;
         int64_t size = 0, count = 0;
-        if (job == F_OPEN_QUEUE) opened = files_walk(root, slot->path, &size, &error);
+        if (job == F_OPEN_QUEUE) opened = files_walk(root, slot->path, &size, &error, slot);
         else if (job == F_READ_QUEUE) {
 #ifdef SILLY_FILES_TEST
             silly_files_test_before_read(fd);
@@ -359,4 +372,23 @@ int64_t silly_files_finish(int64_t epoch) {
     files_epoch = 0;
     pthread_mutex_unlock(&files_lock);
     return 1;
+}
+
+typedef struct { int64_t *data; int64_t len; } files_ints;
+int64_t silly_files_metadata(int64_t epoch, int64_t token, files_ints output) {
+    if (!output.data || output.len < 6) return -EINVAL;
+    pthread_mutex_lock(&files_lock);
+    struct files_slot *slot = files_find(epoch, token);
+    int error = !slot ? ESTALE : slot->cancelled ? ECANCELED
+        : slot->state == F_ERROR ? slot->error : slot->fd < 0 ? EAGAIN : 0;
+    if (!error) {
+        output.data[0] = slot->size;
+        output.data[1] = slot->modified_seconds;
+        output.data[2] = slot->modified_nanoseconds;
+        output.data[3] = slot->device;
+        output.data[4] = slot->inode;
+        output.data[5] = slot->observed_seconds;
+    }
+    pthread_mutex_unlock(&files_lock);
+    return -error;
 }

@@ -13,6 +13,7 @@ struct FileOptions {
     offset: i64 = 0,
     length: i64 = -1,
     content_type: const u8[:] = "application/octet-stream",
+    charset: const u8[:] = "",
     filename: const u8[:] = "",
     pending_bytes_max: i64 = 4096,
     poll_interval_ms: i64 = 1,
@@ -66,6 +67,7 @@ fn file_response<A>(ctx: Context<A, FileTransfer> & , file: OwnedFile&,
 fn file_response_metadata(response: Response&, options: FileOptions) -> ResponseError {
     let content = body_metadata(response, BodyOptions {
             content_type: options.content_type,
+            charset: options.charset,
             ..
         });
     if content != ResponseError.None || options.filename.len == 0 {

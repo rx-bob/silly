@@ -20,6 +20,7 @@ import.stream_contract;
 import.stream_deadlines;
 import.stream_driver;
 import.stream_input;
+import.stream_metadata;
 import.timeout_types;
 import.transfer_key;
 import.transport;
@@ -111,6 +112,9 @@ fn stream_socket_write<S>(slot: StreamSlot<S>&, connection: Connection&,
         }, budget);
     // Retain payload until its framing suffix has drained too.
     if result.status == WireStatus.Complete {
+        if slot.framing == ResponseFraming.Fixed {
+            slot.fixed_remaining -= state.produced;
+        }
         stream_acknowledge(slot.producer, state.key, state.produced);
         slot.chunk_started = false;
     }
@@ -136,7 +140,7 @@ fn service_stream<R, A, S, F, O>(driver: StreamDriver<R, A, S> & , connection: C
         return;
     }
     let was_writable = stream_wants_write(slot, connection);
-    advance_stream_producer(slot, now, F);
+    advance_stream_output(slot, connection, buffers, now, F);
     if producer.render_error {
         cancel_stream_slot(slot, F);
         render_stream_failure(connection, buffers, options);
@@ -179,9 +183,40 @@ fn service_stream<R, A, S, F, O>(driver: StreamDriver<R, A, S> & , connection: C
     }
 }
 
+fn advance_stream_output<S, F>(slot: StreamSlot<S>&, connection: Connection&,
+    buffers: ConnectionBuffers, now: i64) {
+    advance_stream_producer(slot, now, F);
+    let producer .= slot.producer;
+    if producer.render_error || producer.close_required {
+        return;
+    }
+    if slot.deferred {
+        if stream_pending_bytes(producer) != 0 || terminal(producer.continuation) {
+            stream_failure_policy(producer);
+            return;
+        }
+        if !producer.continuation.metadata.ready {
+            return;
+        }
+        if finalize_stream_head(slot, connection, buffers) != ResponseError.None {
+            stream_failure_policy(producer);
+            return;
+        }
+        // Metadata publication precedes any file read, including HEAD/304 cancellation.
+        if slot.framing == ResponseFraming.None || slot.fixed_remaining == 0 {
+            advance_stream_producer(slot, now, F);
+        }
+    }
+    if slot.framing == ResponseFraming.Fixed && (stream_pending_bytes(producer) > slot.fixed_remaining
+        || (terminal(producer.continuation) && slot.fixed_remaining > 0)) {
+        stream_failure_policy(producer);
+    }
+}
+
 fn advance_stream_producer<S, F>(slot: StreamSlot<S>&, now: i64) {
     let producer .= slot.producer;
-    if slot.framing == ResponseFraming.None || slot.framing == ResponseFraming.Fixed {
+    if !slot.deferred && (slot.framing == ResponseFraming.None
+        || (slot.framing == ResponseFraming.Fixed && slot.fixed_remaining == 0)) {
         stream_cancel(producer, producer.continuation.key, F);
         producer.close_required = false;
         producer.commit_requested = true;

@@ -3,8 +3,11 @@ namespace silly;
 
 import std;
 
+import.file_conditions;
+import.file_metadata;
 import.file_types;
 import.files;
+import.http_date;
 import.stream_contract;
 
 enum FileTransferError {
@@ -29,9 +32,21 @@ struct FileTransfer {
     closed: bool = false,
     error: FileTransferError = FileTransferError.None,
     system_error: i32 = 0,
+    static_metadata: bool = false,
+    metadata_published: bool = false,
+    conditional: bool = false,
+    none_match_present: bool = false,
+    none_match_valid: bool = true,
+    none_match: u8[..4096] = [],
+    modified_since: u8[..128] = [],
+    configured_etag: u8[..256] = [],
 }
 
 fn file_step(state: FileTransfer&, event: StreamEvent, out: ChunkWriter&) -> StreamStep {
+    return file_step_with_validator(state, event, out, default_file_validator);
+}
+
+fn file_step_with_validator<V>(state: FileTransfer&, event: StreamEvent, out: ChunkWriter&) -> StreamStep {
     if event == StreamEvent.Cancelled {
         finish_file_transfer(state);
         return StreamStep.Done;
@@ -54,6 +69,9 @@ fn file_step(state: FileTransfer&, event: StreamEvent, out: ChunkWriter&) -> Str
         if result.status != FileStatus.Open || !initialize_file_transfer(state, result.size) {
             return file_transfer_failure(state, FileTransferError.InvalidRange);
         }
+    }
+    if state.static_metadata && !state.metadata_published {
+        return publish_file_metadata(state, out, V);
     }
     if state.remaining == 0 {
         finish_file_transfer(state);
@@ -141,4 +159,46 @@ fn finish_file_transfer(state: FileTransfer&) {
     }
     state.closed = true;
     close_file(state.file);
+}
+
+fn publish_file_metadata<V>(state: FileTransfer&, out: ChunkWriter&) -> StreamStep {
+    let target = out.metadata;
+    guard target else {
+        return file_transfer_failure(state, FileTransferError.InvalidState);
+    }
+    let result = file_metadata(state.file);
+    if !result.ok {
+        state.system_error = result.error;
+        return file_transfer_failure(state, FileTransferError.Native);
+    }
+    var validator = V(result.metadata);
+    if state.configured_etag.len != 0 {
+        validator.etag = state.configured_etag;
+    }
+    if validator.etag.len != 0 && !valid_etag(validator.etag) {
+        return file_transfer_failure(state, FileTransferError.InvalidState);
+    }
+    target.etag = validator.etag;
+    target.last_modified = format_http_date(result.metadata.modified_seconds);
+    target.representation_length = result.metadata.size;
+    target.status = 200;
+    if static_not_modified(state, result.metadata, validator) {
+        target.status = 304;
+    }
+    target.ready = true;
+    state.metadata_published = true;
+    return StreamStep.Wait {
+        wake: Wake.Ready
+    };
+}
+
+fn static_not_modified(state: FileTransfer&, metadata: FileMetadata, validator: FileValidator) -> bool {
+    if !state.conditional {
+        return false;
+    }
+    if state.none_match_present {
+        return state.none_match_valid && if_none_match(state.none_match, validator.etag).matched;
+    }
+    let date = parse_http_date(state.modified_since, metadata.observed_seconds);
+    return date.valid && metadata.modified_seconds >= 0 && metadata.modified_seconds <= date.seconds;
 }

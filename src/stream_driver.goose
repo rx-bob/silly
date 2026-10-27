@@ -8,6 +8,7 @@ import.execution_types;
 import.headers;
 import.http_head_types;
 import.lifecycle_driver;
+import.limits;
 import.response_policy;
 import.response_policy_types;
 import.response_wire_types;
@@ -20,6 +21,14 @@ import.wire_transfer;
 
 struct StreamSlot<S> {
     active: bool = false,
+    deferred: bool = false,
+    retained_limits: Limits = Limits {
+    },
+    retained_cap: i64 = 0,
+    retained_fields: HeaderField[..128] = [],
+    retained_headers: u8[..16384] = [],
+    request_method: u8[..32] = [],
+    fixed_remaining: i64 = -1,
     input_enabled: bool = false,
     input_ended: bool = false,
     input_failed: bool = false,

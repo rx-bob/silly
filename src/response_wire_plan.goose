@@ -34,6 +34,10 @@ fn plan_response_wire(response: Response&, options: ResponseWireOptions) -> Resp
         plan.framing = ResponseFraming.Fixed;
         plan.content_length = response.output.len;
         plan.body_bytes = response.output.len;
+    } else if options.stream_length >= 0 {
+        plan.framing = ResponseFraming.Fixed;
+        plan.content_length = options.stream_length;
+        plan.body_bytes = options.stream_length;
     } else {
         plan.framing = if options.http_minor == 1 {
             ResponseFraming.Chunked
@@ -53,7 +57,7 @@ fn validate_response_wire(response: Response&, options: ResponseWireOptions) -> 
         || !valid_header_name(options.request_method) {
         return ResponseError.InvalidState;
     }
-    if !valid(response.limits) || options.representation_length < - 1 {
+    if !valid(response.limits) || options.representation_length < - 1 || options.stream_length < - 1 {
         return ResponseError.InvalidLimits;
     }
     if response.status < 200 || response.status > 599 {

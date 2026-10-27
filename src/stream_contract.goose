@@ -1,6 +1,8 @@
 // Static producer callbacks borrow input and bounded output only for one step.
 namespace silly;
 
+import.stream_metadata_types;
+
 enum StreamError {
     OutputLimit,
     Input,
@@ -46,6 +48,7 @@ enum StreamStep {
 struct ChunkWriter {
     bytes: u8[:],
     used: i64 = 0,
+    metadata: StreamMetadata? = null,
 }
 
 // A driver-local sink. S must be fixed, owned state; the compiler rejects escaping local roots.
@@ -53,6 +56,7 @@ struct StreamStart<S> {
     selected: bool = false,
     pending_bytes_max: i64 = 4096,
     input: bool = false,
+    defer_headers: bool = false,
     state: S = default<S>(),
 }
 

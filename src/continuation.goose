@@ -2,6 +2,7 @@
 namespace silly;
 
 import.stream_contract;
+import.stream_metadata_types;
 import.transfer_key;
 
 let CONTINUATION_CHUNK_BYTES = 4096;
@@ -31,6 +32,8 @@ struct Continuation<S> {
     wake: Wake = Wake.Ready,
     error: StreamError = StreamError.InvalidStep,
     flush: bool = false,
+    metadata: StreamMetadata = StreamMetadata {
+    },
     chunk_capacity: i64 = CONTINUATION_CHUNK_BYTES,
     produced: i64 = 0,
     acknowledged: i64 = 0,
@@ -68,6 +71,7 @@ fn resume<S, F>(slot: Continuation<S>&, key: TransferKey, event: StreamEvent) ->
     }
     var writer = ChunkWriter {
         bytes: slot.chunk[..slot.chunk_capacity],
+        metadata: slot.metadata,
         ..
     };
     let step = F(slot.state, event, writer);

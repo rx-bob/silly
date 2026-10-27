@@ -17,6 +17,7 @@ import.server_buffers;
 import.state;
 import.stream;
 import.stream_driver;
+import.stream_metadata;
 import.transfer_key;
 
 fn stage_application_reply(driver: NoState&, connection: Connection&, buffers: ConnectionBuffers,
@@ -59,11 +60,37 @@ fn stage_application_reply<R, A, S>(driver: StreamDriver<R, A, S> & , connection
         || response.status == 205 || response.status == 304) {
         stream_wire.close = true;
     }
-    let plan = prepare_response_head(wire, response, stream_wire, min(cap, buffers.head.len));
+    var plan = ResponseWirePlan {
+        close: stream_wire.close,
+        ..
+    };
+    slot.deferred = slot.start.defer_headers;
+    if slot.deferred {
+        plan.error = retain_stream_head(slot, response, stream_wire, min(cap, buffers.head.len));
+    } else {
+        plan = prepare_response_head(wire, response, stream_wire, min(cap, buffers.head.len));
+    }
     if plan.error != ResponseError.None {
         return plan.error;
     }
     copy_server_bytes(buffers.head, wire);
+    initialize_stream_slot(slot, connection);
+    slot.framing = plan.framing;
+    slot.fixed_remaining = if plan.framing == ResponseFraming.Fixed {
+        plan.body_bytes
+    } else {
+        -1
+    };
+    connection.close_after_reply = plan.close;
+    connection.head_bytes = wire.len;
+    connection.body_bytes = 0;
+    connection.head_sent = 0;
+    connection.body_sent = 0;
+    connection.phase = ConnectionPhase.Writing;
+    return ResponseError.None;
+}
+
+fn initialize_stream_slot<S>(slot: StreamSlot<S>&, connection: Connection&) {
     slot.producer = StreamProducer<S> {
         continuation: Continuation<S> {
             key: TransferKey {
@@ -87,19 +114,12 @@ fn stage_application_reply<R, A, S>(driver: StreamDriver<R, A, S> & , connection
     slot.input_started_ms = -1;
     slot.start.selected = false;
     slot.active = true;
-    slot.framing = plan.framing;
     slot.cursor = WireCursor {
     };
     slot.prefix.clear();
     slot.chunk_started = false;
     slot.ending = false;
-    connection.close_after_reply = plan.close;
-    connection.head_bytes = wire.len;
-    connection.body_bytes = 0;
-    connection.head_sent = 0;
-    connection.body_sent = 0;
-    connection.phase = ConnectionPhase.Writing;
-    return ResponseError.None;
+
 }
 
 fn driver_streaming(driver: NoState&) -> bool {
