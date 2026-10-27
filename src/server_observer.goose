@@ -4,6 +4,7 @@ namespace silly;
 import std;
 
 import.connection;
+import.execution_types;
 import.http_head_types;
 import.http_request_line;
 import.lifecycle_types;
@@ -50,6 +51,9 @@ fn snapshot_request(connection: Connection&, input: u8[:]) {
 fn finish_transfer<D, O>(connection: Connection&, driver: D&, hooks: HookState&, outcome: TransferOutcome) {
     if !connection.completion_pending {
         return;
+    }
+    if connection.phase == ConnectionPhase.Executing && outcome == TransferOutcome.Cancelled {
+        connection.completion.execution = ExecutionOutcome.Abandoned;
     }
     connection.completion_pending = false;
     connection.completion.transfer = outcome;

@@ -6,6 +6,7 @@ import std;
 import.body_reader;
 import.body_types;
 import.connection;
+import.execution_types;
 import.header_index;
 import.headers;
 import.http_head_types;
@@ -28,6 +29,7 @@ struct ConnectionBuffers {
     hooks: HookState&,
 }
 struct BodyAdmission {
+    execution_lane: i64 = -1,
     complete_response: bool = false,
     status: i32 = 0,
     cap: i64,
@@ -77,7 +79,12 @@ fn body_admission<R>(driver: RoutePlan<R>&, parsed: ParsedHead, cap: i64) -> Bod
         };
     }
     let route_cap = driver.entries[selected.route_id].options.body_bytes_max;
+    let execution = driver.entries[selected.route_id].options.execution;
     return BodyAdmission {
+        execution_lane: match execution {
+            Inline => -1,
+            Lane lane => lane.index
+        },
         cap: if route_cap >= 0 {
             min(cap, route_cap)
         } else {

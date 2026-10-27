@@ -2,6 +2,7 @@
 namespace silly;
 
 import.body_types;
+import.executor_types;
 import.limits;
 import.route_types;
 import.server_options;
@@ -32,6 +33,8 @@ struct RuntimeOptions {
     connections_max: i64 = 64,
     buffer_bytes_max: i64 = 512 * 1024 * 1024,
     worker: WorkerOptions = WorkerOptions {
+    },
+    executor: ExecutorOptions = ExecutorOptions {
     },
 }
 
@@ -88,7 +91,7 @@ fn valid_runtime_options(options: RuntimeOptions) -> bool {
         || options.connections_max <= 1 || options.buffer_bytes_max <= 0 {
         return false;
     }
-    if !valid_server_options(worker_server_options(options.worker)) {
+    if !valid_server_options(worker_server_options(options.worker)) || !valid_executor_options(options.executor) {
         return false;
     }
     let per_worker = (options.connections_max - 1) / options.workers;
@@ -96,5 +99,20 @@ fn valid_runtime_options(options: RuntimeOptions) -> bool {
         || options.accept_queue_max > per_worker - options.worker.connections_max - 1 {
         return false;
     }
-    return worker_buffer_bytes(options.worker) <= options.buffer_bytes_max / options.workers;
+    let executor_bytes = runtime_executor_payload_bytes(options);
+    if executor_bytes >= options.buffer_bytes_max {
+        return false;
+    }
+    return worker_buffer_bytes(options.worker) <= (options.buffer_bytes_max - executor_bytes) / options.workers;
+}
+
+// Fixed payload arrays reserve their full capacity, regardless of configured admission byte limits.
+// Includes queue records plus explicit in-flight work, response and staging copies; excludes metadata,
+// native thread stacks and compiler scratch space, as the ordinary slab budget does.
+fn runtime_executor_payload_bytes(options: RuntimeOptions) -> i64 {
+    if options.executor.lanes == 0 {
+        return 0;
+    }
+    return (options.executor.lanes * (options.executor.queue_max + 6)
+        + options.workers * (options.executor.outstanding_per_owner + 3)) * (16384 + 65536);
 }

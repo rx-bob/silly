@@ -105,6 +105,7 @@ fn begin_request_body<D, H, E, O>(connection: Connection&, buffers: ConnectionBu
     connection.response_policy = resolve_response_policy(driver, parsed, fields);
     let cap = min(options.limits.body_bytes_max, options.body_limits.bytes_max);
     let admission = body_admission(driver, parsed, cap);
+    connection.execution_lane = admission.execution_lane;
     connection.completion.route_id = admission.route_id;
     connection.completion.selection = admission.selection;
     if finish_policy_request(connection, buffers, options, parsed, E) {

@@ -1,6 +1,7 @@
 // Fixed metadata and borrowed startup/prepared routing owners.
 namespace silly;
 
+import.execution_types;
 import.response_policy_types;
 
 enum BodyMode {
@@ -8,6 +9,7 @@ enum BodyMode {
     Streamed,
 }
 struct RouteOptions {
+    execution: ExecutionClass = ExecutionClass.Inline,
     body: BodyMode = BodyMode.Buffered,
     body_bytes_max: i64 = -1,
 }

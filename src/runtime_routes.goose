@@ -3,6 +3,8 @@ namespace silly;
 
 import std;
 
+import.execution_types;
+import.executor_types;
 import.lifecycle_driver;
 import.lifecycle_types;
 import.response_errors;
@@ -56,7 +58,10 @@ fn runtime_local_routes<Tag, R, A, D, H, L, E>(options: ServerOptions,
         ..
     };
     D(router, app);
-    let plan = prepare(router);
+    var plan = prepare(router);
+    if plan.issue.error == RouteError.None {
+        plan.issue = runtime_execution_issue(plan, start.executor.lanes);
+    }
     if plan.issue.error != RouteError.None {
         var control = silly_transport::Descriptor {
             fd: start.wake
@@ -74,6 +79,12 @@ fn runtime_local_routes<Tag, R, A, D, H, L, E>(options: ServerOptions,
     var driver = LifecycleDriver<R, A> {
         plan: plan,
         app: app,
+        executor: ExecutorOwner {
+            options: start.executor,
+            owner: start.owner,
+            lane_writers: start.lane_writers,
+            ..
+        },
         owner: Owner {
             id: start.owner
         },
@@ -97,4 +108,24 @@ fn runtime_local_routes<Tag, R, A, D, H, L, E>(options: ServerOptions,
     return run_worker_state<Tag>(options, silly_transport::Descriptor {
             fd: start.wake
         }, driver, E, dispatch, observe);
+}
+
+fn runtime_execution_issue<R>(plan: RoutePlan<R>, lanes: i64) -> RouteIssue {
+    for index in plan.entries.len {
+        match plan.entries[index].options.execution {
+            Lane selected => {
+                if selected.index < 0 || selected.index >= lanes {
+                    return RouteIssue {
+                        error: RouteError.UnsupportedOptions,
+                        route_id: index,
+                        ..
+                    };
+                }
+            },
+            Inline => {
+            },
+        }
+    }
+    return RouteIssue {
+    };
 }

@@ -2,13 +2,15 @@
 namespace silly;
 
 import.context;
+import.execution_types;
 import.response;
 
 struct Owner {
     id: i64 = 0,
+    lane: i64 = -1,
 }
 
-// Only the single buffered execution owner exists until execution lanes are implemented.
+// Numeric lane identity is available on Owner; named serialized registration arrives in E6.S3.
 fn is_serialized(owner: Owner, lane: u8[:]) -> bool {
     return false;
 }
@@ -39,6 +41,7 @@ struct AuditRecord {
     response_truncated: bool = false,
 }
 struct CompletionData {
+    execution: ExecutionOutcome = ExecutionOutcome.None,
     route_id: i64 = -1,
     selection: CompletionSelection = CompletionSelection.Unavailable,
     method: u8[..32] = [],

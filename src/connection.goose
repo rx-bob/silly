@@ -2,6 +2,7 @@
 namespace silly;
 
 import.body_types;
+import.execution_types;
 import.headers;
 import.http_head_types;
 import.http_headers;
@@ -15,12 +16,17 @@ enum ConnectionPhase {
     ReadingBody,
     Continue,
     Writing,
+    Executing,
 }
 
 struct Connection {
     socket: silly_transport::Descriptor = silly_transport::Descriptor {
     },
     generation: u64 = 0,
+    request_generation: u64 = 1,
+    slot: i64 = -1,
+    execution_lane: i64 = -1,
+    execution_deadline: i64 = -1,
     phase: ConnectionPhase = ConnectionPhase.Free,
     scan: HeadScan = HeadScan {
     },
@@ -46,6 +52,9 @@ struct Connection {
 }
 
 fn release_connection(connection: Connection&) {
+    if connection.phase == ConnectionPhase.Executing {
+        connection.completion.execution = ExecutionOutcome.Abandoned;
+    }
     silly_transport::close(connection.socket);
     connection.phase = ConnectionPhase.Free;
     // Generation never wraps: an exhausted slot is permanently unavailable.
@@ -62,9 +71,15 @@ fn available_connection(connections: Connection[:]) -> i64 {
 
 // Only transport identity and bounded unread staging survive a completed response.
 fn reset_connection(connection: Connection&) {
+    if connection.request_generation == 0xffffffffffffffff {
+        release_connection(connection);
+        return;
+    }
     let next = Connection {
         socket: connection.socket,
         generation: connection.generation,
+        request_generation: connection.request_generation + 1,
+        slot: connection.slot,
         phase: ConnectionPhase.Reading,
         staged_bytes: connection.staged_bytes,
         staged_read: connection.staged_read,

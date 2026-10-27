@@ -18,8 +18,10 @@ import.response_errors;
 import.response_policy_headers;
 import.response_wire_types;
 import.server_body;
+import.server_executor;
 import.server_observer;
 import.server_options;
+import.server_request_errors;
 import.state;
 
 type BufferedContext = Context<NoState, NoStream>;
@@ -33,6 +35,20 @@ checkfree fn copy_server_bytes(target: u8[:], source: u8[:]) {
 
 // Handler and renderer frames end before their owners can be discarded or reused.
 fn build_reply<D, H, E, O>(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions, driver: D&) {
+    if connection.execution_lane >= 0 {
+        let outcome = queue_execution(driver, connection, buffers);
+        connection.completion.execution = outcome;
+        if outcome == ExecutionOutcome.Queued {
+            connection.phase = ConnectionPhase.Executing;
+        } else {
+            request_error(connection, buffers, options, ResponseFailure {
+                    kind: ResponseFailureKind.Admission,
+                    status: execution_status(outcome),
+                    ..
+                }, E);
+        }
+        return;
+    }
     let input = buffers.input[..connection.scan.head_bytes];
     var fields: HeaderView[>..] = [];
     var index: HeaderIndexEntry[>..] = [];

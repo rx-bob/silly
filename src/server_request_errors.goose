@@ -3,6 +3,7 @@ namespace silly;
 
 import.body_types;
 import.connection;
+import.execution_types;
 import.http_head_types;
 import.http_request_line;
 import.response_errors;
@@ -83,7 +84,14 @@ fn request_eof<E>(connection: Connection&, buffers: ConnectionBuffers, options: 
 }
 
 fn request_timeout<E>(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions) {
-    if (connection.phase == ConnectionPhase.Reading && connection.input_bytes > 0)
+    if connection.phase == ConnectionPhase.Executing {
+        connection.completion.execution = ExecutionOutcome.Deadline;
+        request_error(connection, buffers, options, ResponseFailure {
+                kind: ResponseFailureKind.Timeout,
+                status: 504,
+                ..
+            }, E);
+    } else if (connection.phase == ConnectionPhase.Reading && connection.input_bytes > 0)
         || connection.phase == ConnectionPhase.ReadingBody {
         request_error(connection, buffers, options, ResponseFailure {
                 kind: ResponseFailureKind.Timeout,

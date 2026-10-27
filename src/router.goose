@@ -3,6 +3,7 @@ namespace silly;
 
 import std;
 
+import.execution_types;
 import.headers;
 import.route_compile;
 import.route_types;
@@ -44,7 +45,8 @@ fn route_registration_ready<R>(router: Router<R>&, method: u8[:], path: u8[:], o
         route_fail(router, RouteError.InvalidLimits);
     } else if method.len > router.limits.method_bytes_max || (method.len != 0 && !valid_header_name(method)) {
         route_fail(router, RouteError.InvalidMethod);
-    } else if options.body != BodyMode.Buffered || options.body_bytes_max < - 1 {
+    } else if options.body != BodyMode.Buffered || options.body_bytes_max < - 1
+        || !valid_execution_class(options.execution) {
         route_fail(router, RouteError.UnsupportedOptions);
     } else if router.entries.len >= router.limits.routes_max {
         route_fail(router, RouteError.RouteLimit);

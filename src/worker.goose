@@ -10,6 +10,7 @@ import.server_loop;
 import.server_observer;
 import.server_options;
 import.transport;
+import.worker_executor;
 import.worker_message;
 
 // Consumes wake. The supervisor owns the sole producer and reclaims queued fds after join.
@@ -71,10 +72,11 @@ fn worker_loop<Tag, D, E, H, O>(storage: ServerStorage&, options: ServerOptions,
         if clock.status != silly_transport::IoStatus.Ready {
             return worker_io_failure(ServerError.Clock, clock);
         }
+        let completed = drain_executor_results<Tag>(storage, options, driver, clock.count, E);
         let exhausted = drain_worker_accepts<Tag>(storage.connections, options.accepts_per_turn, clock.count);
         prepare_poll(storage, silly_transport::Descriptor {
             }, wake);
-        let timeout = if exhausted {
+        let timeout = if exhausted || completed {
             0
         } else {
             server_poll_deadline(storage, options, clock.count)

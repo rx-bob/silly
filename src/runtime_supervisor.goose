@@ -3,7 +3,9 @@ namespace silly;
 
 import std;
 
+import.executor_types;
 import.runtime;
+import.runtime_executor;
 import.runtime_mailbox;
 import.server_options;
 import.transport;
@@ -13,7 +15,7 @@ import.worker_options;
 
 fn runtime_supervise(options: RuntimeOptions, listener: silly_transport::Descriptor,
     wake: silly_transport::Descriptor, reports: silly_transport::Descriptor,
-    workers: RuntimeWorker[:]) -> ServerResult {
+    workers: RuntimeWorker[:], lanes: RuntimeWorker[:]) -> ServerResult {
     let fds: i32[3] = [listener.fd, wake.fd, reports.fd];
     var interests: i32[3] = [0, silly_transport::READ, silly_transport::READ];
     var events: i32[3] = [0, 0, 0];
@@ -21,28 +23,14 @@ fn runtime_supervise(options: RuntimeOptions, listener: silly_transport::Descrip
     while true {
         // Drain wake before the report mailbox, matching accepted-socket notification ordering.
         silly_transport::drain_wake(reports);
-        let report, present = qpoll<WorkerReport>();
-        if present {
-            if !report.ready {
-                return worker_result(report);
-            }
-            if report.owner < 0 || report.owner >= workers.len {
-                return ServerResult {
-                    ok: false,
-                    error: ServerError.InvalidOptions,
-                    ..
-                };
-            }
-            workers[report.owner].ready = true;
-            // Finite readiness records (one per worker); check again before sleeping.
+        let health = runtime_check_reports(workers, lanes);
+        if health.stopped {
+            return health.result;
+        }
+        if health.updated {
             continue;
         }
-        var started = true;
-        for worker in workers {
-            if !worker.ready {
-                started = false;
-            }
-        }
+        let started = runtime_owners_ready(workers) && runtime_owners_ready(lanes);
         interests[0] = if started {
             silly_transport::READ
         } else {
@@ -130,6 +118,77 @@ fn runtime_io_failure(error: ServerError, result: silly_transport::IoResult) -> 
         ok: false,
         error: error,
         system_error: result.error,
+        ..
+    };
+}
+
+fn runtime_owners_ready(owners: RuntimeWorker[:]) -> bool {
+    for owner in owners {
+        if !owner.ready {
+            return false;
+        }
+    }
+    return true;
+}
+
+struct RuntimeHealth {
+    updated: bool = false,
+    stopped: bool = false,
+    result: ServerResult = ServerResult {
+        ok: true,
+        ..
+    },
+}
+
+fn runtime_check_reports(workers: RuntimeWorker[:], lanes: RuntimeWorker[:]) -> RuntimeHealth {
+    let report, present = qpoll<WorkerReport>();
+    if present {
+        if !report.ready {
+            return RuntimeHealth {
+                stopped: true,
+                result: worker_result(report),
+                ..
+            };
+        }
+        if report.owner < 0 || report.owner >= workers.len {
+            return invalid_runtime_report();
+        }
+        workers[report.owner].ready = true;
+        return RuntimeHealth {
+            updated: true,
+            ..
+        };
+    }
+    let lane_report, lane_present = qpoll<ExecutorReport>();
+    if lane_present {
+        if !lane_report.ready {
+            return RuntimeHealth {
+                stopped: true,
+                result: executor_result(lane_report),
+                ..
+            };
+        }
+        if lane_report.lane < 0 || lane_report.lane >= lanes.len {
+            return invalid_runtime_report();
+        }
+        lanes[lane_report.lane].ready = true;
+        return RuntimeHealth {
+            updated: true,
+            ..
+        };
+    }
+    return RuntimeHealth {
+    };
+}
+
+fn invalid_runtime_report() -> RuntimeHealth {
+    return RuntimeHealth {
+        stopped: true,
+        result: ServerResult {
+            ok: false,
+            error: ServerError.InvalidOptions,
+            ..
+        },
         ..
     };
 }

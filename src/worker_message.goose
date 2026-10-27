@@ -4,6 +4,7 @@ namespace silly;
 import std;
 
 import.completion_router;
+import.executor_types;
 import.lifecycle_types;
 import.route_types;
 import.server_options;
@@ -17,6 +18,9 @@ struct WorkerStart {
     owner: i64,
     wake: i32,
     report_wake: i32,
+    executor: ExecutorOptions = ExecutorOptions {
+    },
+    lane_writers: i32[4] = [-1; 4],
 }
 
 struct IoOwner0 {

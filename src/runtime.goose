@@ -3,6 +3,8 @@ namespace silly;
 
 import std;
 
+import.executor;
+import.runtime_executor;
 import.runtime_mailbox;
 import.runtime_supervisor;
 import.server_options;
@@ -23,6 +25,14 @@ struct RuntimeWorker {
 // C is copied flat startup configuration, never an app reference or a borrowed route plan.
 fn run_runtime<C, W>(options: RuntimeOptions, listener: silly_transport::Descriptor,
     wake: silly_transport::Descriptor, seed: C) -> ServerResult {
+    fn no_lanes(settings: RuntimeOptions, workers: RuntimeWorker[:], lanes: RuntimeWorker[:],
+        report_wake: i32, config: C) {
+    }
+    return run_runtime_entry(options, listener, wake, seed, false, W, no_lanes);
+}
+
+fn run_runtime_entry<C, W, S>(options: RuntimeOptions, listener: silly_transport::Descriptor,
+    wake: silly_transport::Descriptor, seed: C, executor: bool) -> ServerResult {
     var incoming = listener;
     var control = wake;
     var result = ServerResult {
@@ -31,11 +41,12 @@ fn run_runtime<C, W>(options: RuntimeOptions, listener: silly_transport::Descrip
         message: "invalid runtime options",
         ..
     };
-    if valid_runtime_options(options) && listener.fd >= 0 && wake.fd >= 0 && listener.fd != wake.fd {
+    if valid_runtime_options(options) && (executor || options.executor.lanes == 0)
+        && listener.fd >= 0 && wake.fd >= 0 && listener.fd != wake.fd {
         qlimit<RuntimeLease>(1);
         if qput(RuntimeLease {
             }) {
-            result = runtime_owned(options, incoming, control, seed, W);
+            result = runtime_owned(options, incoming, control, seed, W, S);
             let lease,
             held = qpoll<RuntimeLease>();
             assert(held);
@@ -50,57 +61,59 @@ fn run_runtime<C, W>(options: RuntimeOptions, listener: silly_transport::Descrip
     return result;
 }
 
-fn runtime_owned<C, W>(options: RuntimeOptions, listener: silly_transport::Descriptor,
+fn runtime_owned<C, W, S>(options: RuntimeOptions, listener: silly_transport::Descriptor,
     wake: silly_transport::Descriptor, seed: C) -> ServerResult {
     initialize_runtime_mailboxes(options.accept_queue_max);
+    initialize_executor_mailboxes(options.executor, options.workers);
     var workers: RuntimeWorker[4] = [RuntimeWorker {
+        }; 4];
+    var lanes: RuntimeWorker[4] = [RuntimeWorker {
         }; 4];
     var reports = silly_transport::wake_pair();
     if reports.status != silly_transport::IoStatus.Ready {
-        return ServerResult {
-            ok: false,
-            error: ServerError.Wake,
-            system_error: reports.error,
-            ..
-        };
+        return runtime_io_failure(ServerError.Wake, silly_transport::IoResult {
+                status: reports.status,
+                error: reports.error,
+                ..
+            });
     }
-    let opened = open_runtime_workers(workers[..options.workers]);
+    let opened = open_runtime_owners(workers[..options.workers], lanes[..options.executor.lanes]);
     if !opened.ok {
         silly_transport::close(reports.reader);
         silly_transport::close(reports.writer);
         return opened;
     }
-    for owner in options.workers {
+    S(options, workers[..options.workers], lanes[..options.executor.lanes], reports.writer.fd, seed);
+    spawn_runtime_workers(options, workers[..options.workers], lanes[..options.executor.lanes],
+        reports.writer.fd, seed, W);
+    var result = runtime_supervise(options, listener, wake, reports.reader,
+        workers[..options.workers], lanes[..options.executor.lanes]);
+    stop_runtime_owners(workers[..options.workers], lanes[..options.executor.lanes]);
+    // All producers/readers have joined. Only now reclaim resource messages and close wake writers.
+    reclaim_runtime_mailboxes(options.accept_queue_max);
+    reclaim_runtime_executor_mailboxes(options.executor);
+    close_runtime_owners(workers);
+    close_runtime_owners(lanes);
+    silly_transport::close(reports.reader);
+    silly_transport::close(reports.writer);
+    collect_runtime_results(result);
+    return result;
+}
+
+fn spawn_runtime_workers<C, W>(options: RuntimeOptions, workers: RuntimeWorker[:],
+    lanes: RuntimeWorker[:], report_wake: i32, seed: C) {
+    let writers = runtime_owner_writers(lanes);
+    for owner in workers.len {
         workers[owner].thread = thread_spawn(W, WorkerStart {
                 options: options.worker,
                 owner: owner,
                 wake: workers[owner].reader.fd,
-                report_wake: reports.writer.fd
+                report_wake: report_wake,
+                executor: options.executor,
+                lane_writers: writers,
             }, seed);
         workers[owner].reader.fd = -1;
     }
-    var result = runtime_supervise(options, listener, wake, reports.reader, workers[..options.workers]);
-    for owner in options.workers {
-        route_worker_stop(owner, workers[owner].writer);
-    }
-    for owner in options.workers {
-        assert(thread_wait(workers[owner].thread));
-        silly_transport::close(workers[owner].writer);
-    }
-    // All producers and readers have stopped. The supervisor becomes the sole reclaiming reader.
-    reclaim_runtime_mailboxes(options.accept_queue_max);
-    silly_transport::close(reports.reader);
-    silly_transport::close(reports.writer);
-    for index in 8 {
-        let report, present = qpoll<WorkerReport>();
-        if !present {
-            break;
-        }
-        if !report.ok && result.ok {
-            result = worker_result(report);
-        }
-    }
-    return result;
 }
 
 fn open_runtime_workers(workers: RuntimeWorker[:]) -> ServerResult {
