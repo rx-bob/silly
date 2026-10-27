@@ -2,6 +2,7 @@
 namespace silly;
 
 import.body_types;
+import.lifecycle_types;
 import.limits;
 import.route_types;
 import.transport;
@@ -34,6 +35,7 @@ enum ServerError {
     Clock,
     Poll,
     Routes,
+    Hook,
 }
 
 struct ServerResult {
@@ -43,6 +45,7 @@ struct ServerResult {
     system_error: i32 = 0,
     route_issue: RouteIssue = RouteIssue {
     },
+    hook_failure: HookResult = HookResult.Ok,
 }
 
 fn valid_server_options(options: ServerOptions) -> bool {

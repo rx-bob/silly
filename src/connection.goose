@@ -5,6 +5,7 @@ import.body_types;
 import.headers;
 import.http_head_types;
 import.http_headers;
+import.lifecycle_types;
 import.transport;
 
 enum ConnectionPhase {
@@ -36,6 +37,9 @@ struct Connection {
     head_sent: i64 = 0,
     body_sent: i64 = 0,
     active_ms: i64 = 0,
+    completion: CompletionData = CompletionData {
+    },
+    completion_pending: bool = false,
 }
 
 fn release_connection(connection: Connection&) {

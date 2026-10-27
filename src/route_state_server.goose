@@ -150,6 +150,7 @@ fn dispatch_state_route<R, A, H, C>(driver: RouteDriver<R, A> & , ctx: BufferedC
         request: ctx.request,
         response: ctx.response,
         app: driver.app,
+        audit: ctx.audit,
         route_captures: ctx.route_captures,
         stream_start: ctx.stream_start,
     };

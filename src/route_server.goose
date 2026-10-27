@@ -4,6 +4,7 @@ namespace silly;
 import std;
 
 import.endpoint;
+import.lifecycle_types;
 import.response_errors;
 import.route_captures;
 import.route_match;
@@ -88,12 +89,27 @@ fn dispatch_route<R, A, S, H>(plan: RoutePlan<R>&, ctx: Context<A, S> & ) {
 
 fn dispatch_route_with_cleanup<R, A, S, H, C>(plan: RoutePlan<R>&, ctx: Context<A, S> & ) {
     let selected = match_route(plan, ctx.request.method, ctx.request.target);
+    let audit = ctx.audit;
+    if audit {
+        audit.route_id = selected.route_id;
+        audit.selection = if selected.result == RouteMatchResult.Matched {
+            CompletionSelection.Matched
+        } else if selected.result == RouteMatchResult.NotFound {
+            CompletionSelection.NotFound
+        } else if selected.result == RouteMatchResult.GeneratedOptions
+            || selected.result == RouteMatchResult.MethodNotAllowed {
+            CompletionSelection.Generated
+        } else {
+            CompletionSelection.Unavailable
+        };
+    }
     if selected.result == RouteMatchResult.Matched {
         var routed = Context<A, S> {
             request: ctx.request,
             response: ctx.response,
             app: ctx.app,
             stream_start: ctx.stream_start,
+            audit: ctx.audit,
             route_captures: route_captures(plan, selected.route_id, ctx.request.target),
             ..
         };

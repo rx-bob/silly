@@ -4,8 +4,10 @@ namespace silly;
 import std;
 
 import.connection;
+import.lifecycle_types;
 import.server_body;
 import.server_io;
+import.server_observer;
 import.server_options;
 import.server_request_errors;
 import.transport;
@@ -20,12 +22,16 @@ struct ServerStorage {
     fds: i32[:],
     interests: i32[:],
     events: i32[:],
+    hooks: HookState&,
 }
 
-fn server_loop<D, H, E>(storage: ServerStorage&, options: ServerOptions,
+fn server_loop<D, H, E, O>(storage: ServerStorage&, options: ServerOptions,
     listener: silly_transport::Descriptor, wake: silly_transport::Descriptor, driver: D&) -> ServerResult {
     var running = true;
     while running {
+        if storage.hooks.failure != HookResult.Ok {
+            return hook_server_result(storage.hooks);
+        }
         prepare_poll(storage, listener, wake);
         let timeout = server_poll_timeout(storage, options);
         let ready = silly_transport::poll(storage.fds, storage.interests, storage.events, timeout);
@@ -74,7 +80,7 @@ fn server_loop<D, H, E>(storage: ServerStorage&, options: ServerOptions,
                 };
             }
         }
-        service_connections(storage, options, clock.count, driver, H, E);
+        service_connections(storage, options, clock.count, driver, H, E, O);
     }
     return ServerResult {
         ok: true,
@@ -147,14 +153,20 @@ fn accept_connections(connections: Connection[:], listener: silly_transport::Des
     };
 }
 
-fn service_connections<D, H, E>(storage: ServerStorage&, options: ServerOptions, now: i64, driver: D&) {
+fn service_connections<D, H, E, O>(storage: ServerStorage&, options: ServerOptions, now: i64, driver: D&) {
     for index in storage.connections.len {
+        if storage.hooks.failure != HookResult.Ok {
+            return;
+        }
         let connection .= storage.connections[index];
         if connection.phase == ConnectionPhase.Free {
             continue;
         }
         if now < connection.active_ms || now - connection.active_ms >= options.idle_timeout_ms {
             request_timeout(connection, connection_buffers(storage, options, index), options, E);
+            if connection.phase == ConnectionPhase.Free {
+                finish_transfer(connection, driver, storage.hooks, TransferOutcome.Cancelled, O);
+            }
             connection.active_ms = now;
             continue;
         }
@@ -168,9 +180,13 @@ fn service_connections<D, H, E>(storage: ServerStorage&, options: ServerOptions,
         let output_before = connection.head_sent + connection.body_sent;
         let phase_before = connection.phase;
         if connection.phase == ConnectionPhase.Reading || connection.phase == ConnectionPhase.ReadingBody {
-            read_connection(connection, buffers, options, driver, H, E);
+            read_connection(connection, buffers, options, driver, H, E, O);
         } else {
-            write_connection(connection, buffers.head, buffers.body, options.work_bytes_per_turn);
+            write_connection_observed(connection, buffers.head, buffers.body, options.work_bytes_per_turn,
+                driver, storage.hooks, O);
+        }
+        if connection.phase == ConnectionPhase.Free {
+            finish_transfer(connection, driver, storage.hooks, TransferOutcome.Cancelled, O);
         }
         if connection.received_bytes != received_before || connection.staged_read != staged_before
             || connection.head_sent + connection.body_sent != output_before
@@ -206,5 +222,6 @@ fn connection_buffers(storage: ServerStorage, options: ServerOptions, index: i64
         body: storage.body[body_start..body_start + options.limits.output_bytes_max],
         request: storage.request[request_start..request_start + options.limits.body_bytes_max],
         staging: storage.staging[staging_start..staging_start + server_read_bytes(options)],
+        hooks: storage.hooks,
     };
 }

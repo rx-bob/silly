@@ -10,11 +10,13 @@ import.headers;
 import.http_head_types;
 import.http_parser;
 import.http_writer;
+import.lifecycle_types;
 import.request;
 import.response;
 import.response_errors;
 import.response_wire_types;
 import.server_body;
+import.server_observer;
 import.server_options;
 import.state;
 
@@ -28,7 +30,7 @@ checkfree fn copy_server_bytes(target: u8[:], source: u8[:]) {
 }
 
 // Handler and renderer frames end before their owners can be discarded or reused.
-fn build_reply<D, H, E>(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions, driver: D&) {
+fn build_reply<D, H, E, O>(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions, driver: D&) {
     let input = buffers.input[..connection.scan.head_bytes];
     var fields: HeaderView[>..] = [];
     var index: HeaderIndexEntry[>..] = [];
@@ -54,13 +56,13 @@ fn build_reply<D, H, E>(connection: Connection&, buffers: ConnectionBuffers, opt
         close: connection.close_after_reply,
         ..
     };
-    let failure = application_reply(connection, buffers, options, request, wire_options, driver, H);
+    let failure = application_reply(connection, buffers, options, request, wire_options, driver, H, O);
     if failure.error != ResponseError.None {
         render_reply(connection, buffers, options, wire_options, failure, E);
     }
 }
 
-fn application_reply<D, H>(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions,
+fn application_reply<D, H, O>(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions,
     request: Request, wire_options: ResponseWireOptions, driver: D&) -> ResponseFailure {
     var fields: HeaderField[>..] = [];
     var headers: u8[>..] = [];
@@ -77,9 +79,22 @@ fn application_reply<D, H>(connection: Connection&, buffers: ConnectionBuffers, 
     var ctx = BufferedContext {
         request: request,
         response: response,
-        app: app
+        app: app,
+        audit: connection.completion,
     };
     H(driver, ctx);
+    connection.completion.status = response.status;
+    connection.completion.handler_outcome = handler_outcome(response, RouteSelection.Matched);
+    if connection.completion.selection == CompletionSelection.Matched {
+        connection.completion.handler_ran = true;
+        observe_server(driver, buffers.hooks, ServerEvent.HandlerFinished {
+                completion: connection.completion,
+            }, O);
+    }
+    if buffers.hooks.failure != HookResult.Ok {
+        return ResponseFailure {
+        };
+    }
     let failure = response_failure(response);
     if failure.error != ResponseError.None {
         return failure;
@@ -136,6 +151,7 @@ fn stage_reply(connection: Connection&, buffers: ConnectionBuffers, response: Re
     }
     copy_server_bytes(buffers.head, wire);
     copy_server_bytes(buffers.body, response.output[..plan.body_bytes]);
+    connection.completion.status = response.status;
     connection.close_after_reply = plan.close;
     connection.head_bytes = wire.len;
     connection.body_bytes = plan.body_bytes;
@@ -151,6 +167,7 @@ fn build_head_error(connection: Connection&, head: u8[:], result: HeadResult) {
 
 fn build_status_error(connection: Connection&, head: u8[:], status: i32) {
     connection.close_after_reply = true;
+    connection.completion.status = status;
     assert(status >= 400);
     let bytes = str("HTTP/1.", connection.http_minor, " ", status, " ", response_reason(status),
         "\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
@@ -163,6 +180,7 @@ fn build_status_error(connection: Connection&, head: u8[:], status: i32) {
 }
 
 fn build_failure(connection: Connection&, head: u8[:], http_minor: i32 = 1) {
+    connection.completion.status = 500;
     connection.close_after_reply = true;
     let bytes = str("HTTP/1.", http_minor,
         " 500 Internal Server Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");

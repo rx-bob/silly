@@ -4,9 +4,11 @@ namespace silly;
 import std;
 
 import.connection;
+import.lifecycle_types;
 import.response_errors;
 import.server_buffers;
 import.server_loop;
+import.server_observer;
 import.server_options;
 import.state;
 import.transport;
@@ -40,6 +42,11 @@ fn run_server_state<D, H>(options: ServerOptions, listener: silly_transport::Des
 
 fn run_server_state_with_errors<D, E, H>(options: ServerOptions, listener: silly_transport::Descriptor,
     wake: silly_transport::Descriptor, driver: D&) -> ServerResult {
+    return run_server_state_with_observer(options, listener, wake, driver, E, H, no_server_observer);
+}
+
+fn run_server_state_with_observer<D, E, H, O>(options: ServerOptions, listener: silly_transport::Descriptor,
+    wake: silly_transport::Descriptor, driver: D&) -> ServerResult {
     var owned_listener = listener;
     var owned_wake = wake;
     if !valid_server_options(options) || listener.fd < 0 || wake.fd < 0 || listener.fd == wake.fd {
@@ -54,6 +61,22 @@ fn run_server_state_with_errors<D, E, H>(options: ServerOptions, listener: silly
             ..
         };
     }
+    var hooks = HookState {
+    };
+    observe_server(driver, hooks, ServerEvent.Start, O);
+    if hooks.failure != HookResult.Ok {
+        observe_server(driver, hooks, ServerEvent.Stop, O);
+        silly_transport::close(owned_listener);
+        silly_transport::close(owned_wake);
+        return hook_server_result(hooks);
+    }
+    return run_server_storage(options, owned_listener, owned_wake, driver, hooks, E, H, O);
+}
+
+fn run_server_storage<D, E, H, O>(options: ServerOptions, listener: silly_transport::Descriptor,
+    wake: silly_transport::Descriptor, driver: D&, hooks: HookState&) -> ServerResult {
+    var owned_listener = listener;
+    var owned_wake = wake;
     var connections: Connection[>..] = [];
     var input: u8[>..] = [];
     var head: u8[>..] = [];
@@ -83,14 +106,21 @@ fn run_server_state_with_errors<D, E, H>(options: ServerOptions, listener: silly
         fds: fds,
         interests: interests,
         events: events,
+        hooks: hooks,
     };
-    let result = server_loop(storage, options, owned_listener, owned_wake, driver, H, E);
+    let result = server_loop(storage, options, owned_listener, owned_wake, driver, H, E, O);
     for &connection in connections {
+        finish_transfer(connection, driver, hooks, TransferOutcome.Cancelled, O);
         release_connection(connection);
     }
+    observe_server(driver, hooks, ServerEvent.Stop, O);
     silly_transport::close(owned_listener);
     silly_transport::close(owned_wake);
-    return result;
+    return if hooks.failure == HookResult.Ok {
+        result
+    } else {
+        hook_server_result(hooks)
+    };
 }
 
 // Initial low-level entry point: handles each admitted GET with one static callback.

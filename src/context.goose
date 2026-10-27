@@ -1,6 +1,7 @@
 // One invocation borrows request, response builders and execution-local application state.
 namespace silly;
 
+import.lifecycle_types;
 import.request;
 import.request_headers;
 import.response;
@@ -12,6 +13,7 @@ struct Context<A, S> {
     response: Response&,
     app: A&,
     stream_start: StreamStart<S>? = null,
+    audit: CompletionData? = null,
     route_captures: RouteCaptures = RouteCaptures {
     },
 }

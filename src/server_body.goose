@@ -11,6 +11,8 @@ import.headers;
 import.http_head_types;
 import.http_headers;
 import.http_parser;
+import.lifecycle_driver;
+import.lifecycle_types;
 import.route_driver;
 import.route_match;
 import.route_types;
@@ -23,11 +25,14 @@ struct ConnectionBuffers {
     body: u8[:],
     request: u8[:],
     staging: u8[:],
+    hooks: HookState&,
 }
 struct BodyAdmission {
     complete_response: bool = false,
     status: i32 = 0,
     cap: i64,
+    route_id: i64 = -1,
+    selection: CompletionSelection = CompletionSelection.Unavailable,
 }
 
 fn body_admission(driver: NoState&, parsed: ParsedHead, cap: i64) -> BodyAdmission {
@@ -55,6 +60,11 @@ fn body_admission<R>(driver: RoutePlan<R>&, parsed: ParsedHead, cap: i64) -> Bod
                 400
             },
             cap: cap,
+            selection: if selected.result == RouteMatchResult.NotFound {
+                CompletionSelection.NotFound
+            } else {
+                CompletionSelection.Unavailable
+            },
         };
     }
     if selected.result == RouteMatchResult.GeneratedOptions
@@ -62,6 +72,7 @@ fn body_admission<R>(driver: RoutePlan<R>&, parsed: ParsedHead, cap: i64) -> Bod
         return BodyAdmission {
             complete_response: true,
             cap: cap,
+            selection: CompletionSelection.Generated,
             ..
         };
     }
@@ -72,11 +83,17 @@ fn body_admission<R>(driver: RoutePlan<R>&, parsed: ParsedHead, cap: i64) -> Bod
         } else {
             cap
         },
+        route_id: selected.route_id,
+        selection: CompletionSelection.Matched,
         ..
     };
 }
 
 fn body_admission<R, A>(driver: RouteDriver<R, A> & , parsed: ParsedHead, cap: i64) -> BodyAdmission {
+    return body_admission(driver.plan, parsed, cap);
+}
+
+fn body_admission<R, A>(driver: LifecycleDriver<R, A> & , parsed: ParsedHead, cap: i64) -> BodyAdmission {
     return body_admission(driver.plan, parsed, cap);
 }
 

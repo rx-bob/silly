@@ -1,6 +1,7 @@
 // Core package entry point. Server and handler contracts are specified in docs/public_api.md.
 namespace silly;
 
+import.src.audit;
 import.src.body_reader;
 import.src.body_types;
 import.src.chunk_decoder;
@@ -35,8 +36,11 @@ import.src.json_view;
 import.src.json_writer;
 import.src.json_writer_scalars;
 import.src.json_writer_types;
+import.src.lifecycle_types;
+import.src.lifecycle_ufcs;
 import.src.limits;
 import.src.memory_transport;
+import.src.middleware;
 import.src.param_ufcs;
 import.src.query;
 import.src.query_decode;
@@ -55,6 +59,7 @@ import.src.responses_ufcs;
 import.src.route_captures;
 import.src.route_compile;
 import.src.route_driver;
+import.src.route_lifecycle;
 import.src.route_match;
 import.src.route_plan;
 import.src.route_policy;
