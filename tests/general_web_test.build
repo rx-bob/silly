@@ -1,0 +1,1 @@
+c_sources = ["files_fixture.c", "lifecycle_fixture.c"];
