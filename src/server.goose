@@ -75,6 +75,16 @@ fn run_server_state_with_observer<D, E, H, O>(options: ServerOptions, listener: 
 
 fn run_server_storage<D, E, H, O>(options: ServerOptions, listener: silly_transport::Descriptor,
     wake: silly_transport::Descriptor, driver: D&, hooks: HookState&) -> ServerResult {
+    fn drive_loop(storage: ServerStorage&, settings: ServerOptions, incoming: silly_transport::Descriptor,
+        control: silly_transport::Descriptor, state: D&) -> ServerResult {
+        return server_loop(storage, settings, incoming, control, state, H, E, O);
+    }
+    return run_server_storage_loop(options, listener, wake, driver, hooks, E, H, O, drive_loop);
+}
+
+// Storage and terminal cleanup stay identical for listening owners and mailbox-fed workers.
+fn run_server_storage_loop<D, E, H, O, Loop>(options: ServerOptions, listener: silly_transport::Descriptor,
+    wake: silly_transport::Descriptor, driver: D&, hooks: HookState&) -> ServerResult {
     var owned_listener = listener;
     var owned_wake = wake;
     var connections: Connection[>..] = [];
@@ -107,8 +117,9 @@ fn run_server_storage<D, E, H, O>(options: ServerOptions, listener: silly_transp
         interests: interests,
         events: events,
         hooks: hooks,
+        ..
     };
-    let result = server_loop(storage, options, owned_listener, owned_wake, driver, H, E, O);
+    let result = Loop(storage, options, owned_listener, owned_wake, driver);
     for &connection in connections {
         finish_transfer(connection, driver, hooks, TransferOutcome.Cancelled, O);
         release_connection(connection);

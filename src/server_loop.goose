@@ -23,6 +23,8 @@ struct ServerStorage {
     interests: i32[:],
     events: i32[:],
     hooks: HookState&,
+    service_cursor: i64 = 0,
+    service_pending: bool = false,
 }
 
 fn server_loop<D, H, E, O>(storage: ServerStorage&, options: ServerOptions,
@@ -153,46 +155,63 @@ fn accept_connections(connections: Connection[:], listener: silly_transport::Des
     };
 }
 
+// Bound callback/I/O work per turn and resume after the last serviced slot.
 fn service_connections<D, H, E, O>(storage: ServerStorage&, options: ServerOptions, now: i64, driver: D&) {
-    for index in storage.connections.len {
+    let start = storage.service_cursor;
+    var serviced = 0;
+    storage.service_pending = false;
+    for offset in storage.connections.len {
         if storage.hooks.failure != HookResult.Ok {
             return;
         }
+        let index = (start + offset) % storage.connections.len;
         let connection .= storage.connections[index];
         if connection.phase == ConnectionPhase.Free {
             continue;
         }
-        if now < connection.active_ms || now - connection.active_ms >= options.idle_timeout_ms {
-            request_timeout(connection, connection_buffers(storage, options, index), options, E);
-            if connection.phase == ConnectionPhase.Free {
-                finish_transfer(connection, driver, storage.hooks, TransferOutcome.Cancelled, O);
-            }
-            connection.active_ms = now;
+        let expired = now < connection.active_ms || now - connection.active_ms >= options.idle_timeout_ms;
+        if !expired && storage.events[index + 2] == 0 && !input_pending(connection) {
             continue;
         }
-        let events = storage.events[index + 2];
-        if events == 0 && !input_pending(connection) {
-            continue;
+        if serviced >= options.dispatches_per_turn {
+            storage.service_pending = true;
+            return;
         }
-        let buffers = connection_buffers(storage, options, index);
-        let received_before = connection.received_bytes;
-        let staged_before = connection.staged_read;
-        let output_before = connection.head_sent + connection.body_sent;
-        let phase_before = connection.phase;
-        if connection.phase == ConnectionPhase.Reading || connection.phase == ConnectionPhase.ReadingBody {
-            read_connection(connection, buffers, options, driver, H, E, O);
-        } else {
-            write_connection_observed(connection, buffers.head, buffers.body, options.work_bytes_per_turn,
-                driver, storage.hooks, O);
-        }
+        service_connection(storage, options, now, driver, index, H, E, O);
+        serviced += 1;
+        storage.service_cursor = (index + 1) % storage.connections.len;
+    }
+}
+
+fn service_connection<D, H, E, O>(storage: ServerStorage&, options: ServerOptions,
+    now: i64, driver: D&, index: i64) {
+    let connection .= storage.connections[index];
+    if now < connection.active_ms || now - connection.active_ms >= options.idle_timeout_ms {
+        request_timeout(connection, connection_buffers(storage, options, index), options, E);
         if connection.phase == ConnectionPhase.Free {
             finish_transfer(connection, driver, storage.hooks, TransferOutcome.Cancelled, O);
         }
-        if connection.received_bytes != received_before || connection.staged_read != staged_before
-            || connection.head_sent + connection.body_sent != output_before
-            || connection.phase != phase_before {
-            connection.active_ms = now;
-        }
+        connection.active_ms = now;
+        return;
+    }
+    let buffers = connection_buffers(storage, options, index);
+    let received_before = connection.received_bytes;
+    let staged_before = connection.staged_read;
+    let output_before = connection.head_sent + connection.body_sent;
+    let phase_before = connection.phase;
+    if connection.phase == ConnectionPhase.Reading || connection.phase == ConnectionPhase.ReadingBody {
+        read_connection(connection, buffers, options, driver, H, E, O);
+    } else {
+        write_connection_observed(connection, buffers.head, buffers.body, options.work_bytes_per_turn,
+            driver, storage.hooks, O);
+    }
+    if connection.phase == ConnectionPhase.Free {
+        finish_transfer(connection, driver, storage.hooks, TransferOutcome.Cancelled, O);
+    }
+    if connection.received_bytes != received_before || connection.staged_read != staged_before
+        || connection.head_sent + connection.body_sent != output_before
+        || connection.phase != phase_before {
+        connection.active_ms = now;
     }
 }
 
@@ -202,12 +221,32 @@ fn input_pending(connection: Connection&) -> bool {
 }
 
 fn server_poll_timeout(storage: ServerStorage, options: ServerOptions) -> i32 {
+    let clock = silly_transport::monotonic_ms();
+    if clock.status != silly_transport::IoStatus.Ready {
+        return 0;
+    }
+    return server_poll_deadline(storage, options, clock.count);
+}
+
+fn server_poll_deadline(storage: ServerStorage, options: ServerOptions, now: i64) -> i32 {
+    if storage.service_pending {
+        return 0;
+    }
+    var timeout: i64 = options.poll_timeout_ms;
     for &connection in storage.connections {
-        if input_pending(connection) {
+        if connection.phase == ConnectionPhase.Free {
+            continue;
+        }
+        if input_pending(connection) || now < connection.active_ms {
             return 0;
         }
+        let elapsed = now - connection.active_ms;
+        if elapsed >= options.idle_timeout_ms {
+            return 0;
+        }
+        timeout = min(timeout, options.idle_timeout_ms - elapsed);
     }
-    return options.poll_timeout_ms;
+    return timeout as i32;
 }
 
 fn connection_buffers(storage: ServerStorage, options: ServerOptions, index: i64) -> ConnectionBuffers {

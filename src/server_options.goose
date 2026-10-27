@@ -17,6 +17,7 @@ struct ServerOptions {
     buffer_bytes_max: i64 = 512 * 1024 * 1024,
     work_bytes_per_turn: i64 = 64 * 1024,
     accepts_per_turn: i64 = 16,
+    dispatches_per_turn: i64 = 16,
     idle_timeout_ms: i64 = 30000,
     poll_timeout_ms: i32 = 100,
     body_limits: BodyLimits = BodyLimits {
@@ -57,7 +58,7 @@ fn valid_server_options(options: ServerOptions) -> bool {
         || options.response_head_bytes_max < 128 || options.buffer_bytes_max <= 0 {
         return false;
     }
-    if options.work_bytes_per_turn <= 0 || options.accepts_per_turn <= 0
+    if options.work_bytes_per_turn <= 0 || options.accepts_per_turn <= 0 || options.dispatches_per_turn <= 0
         || options.accepts_per_turn > options.connections_max || options.idle_timeout_ms <= 0
         || options.poll_timeout_ms <= 0 || options.poll_timeout_ms > options.idle_timeout_ms {
         return false;

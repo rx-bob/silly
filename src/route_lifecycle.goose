@@ -40,8 +40,7 @@ fn observe_lifecycle<R, A, L>(driver: LifecycleDriver<R, A> & , event: ServerEve
     match event {
         Start => {
             return L(driver.app, Lifecycle<R>.Start {
-                    owner: Owner {
-                    }
+                    owner: driver.owner
                 });
         },
         HandlerFinished done => {
@@ -56,8 +55,7 @@ fn observe_lifecycle<R, A, L>(driver: LifecycleDriver<R, A> & , event: ServerEve
         },
         Stop => {
             return L(driver.app, Lifecycle<R>.Stop {
-                    owner: Owner {
-                    }
+                    owner: driver.owner
                 });
         },
     }
@@ -96,7 +94,8 @@ fn run_prepared_server_with_lifecycle_and_errors<R, A, H, L, E>(options: ServerO
     }
     var driver = LifecycleDriver<R, A> {
         plan: plan,
-        app: app
+        app: app,
+        ..
     };
     fn dispatch(routes: LifecycleDriver<R, A> & , ctx: BufferedContext&) {
         dispatch_lifecycle_route(routes, ctx, H);
