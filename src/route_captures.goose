@@ -6,6 +6,7 @@ import std;
 import.request;
 import.route_match;
 import.route_types;
+import.url;
 
 const EMPTY_ROUTE_SEGMENTS: RouteSegment[0] = [];
 
@@ -54,56 +55,4 @@ fn param(captures: RouteCaptures, name: u8[:]) -> FieldValue {
     }
     return FieldValue {
     };
-}
-
-enum PathDecodeError {
-    None,
-    InvalidEscape,
-    Limit,
-}
-
-fn path_hex(byte: u8) -> i32 {
-    if byte >= '0' && byte <= '9' {
-        return byte - '0';
-    }
-    if byte >= 'a' && byte <= 'f' {
-        return (byte - 'a')as i32 + 10;
-    }
-    if byte >= 'A' && byte <= 'F' {
-        return (byte - 'A')as i32 + 10;
-    }
-    return -1;
-}
-
-// Decode once into caller-owned storage. '+' stays literal; failure leaves output unchanged.
-fn decode_path(out: u8[>..]&, raw: u8[:], cap: i64) -> PathDecodeError {
-    if cap < 0 || out.len > cap {
-        return PathDecodeError.Limit;
-    }
-    var cursor: i64 = 0;
-    var count: i64 = 0;
-    while cursor < raw.len {
-        if raw[cursor] == '%' {
-            if raw.len - cursor < 3 || path_hex(raw[cursor + 1]) < 0 || path_hex(raw[cursor + 2]) < 0 {
-                return PathDecodeError.InvalidEscape;
-            }
-            cursor += 2;
-        }
-        count += 1;
-        cursor += 1;
-    }
-    if count > cap - out.len {
-        return PathDecodeError.Limit;
-    }
-    cursor = 0;
-    while cursor < raw.len {
-        if raw[cursor] == '%' {
-            out.push((path_hex(raw[cursor + 1]) * 16 + path_hex(raw[cursor + 2]))as u8);
-            cursor += 3;
-        } else {
-            out.push(raw[cursor]);
-            cursor += 1;
-        }
-    }
-    return PathDecodeError.None;
 }
