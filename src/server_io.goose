@@ -36,7 +36,7 @@ fn read_connection<D, H, E>(connection: Connection&, buffers: ConnectionBuffers,
         connection.received_bytes += result.count;
         let scanned = scan_head(connection.scan, buffers.input[..connection.input_bytes], options.limits);
         if scanned == HeadResult.Complete {
-            begin_request_body(connection, buffers, options, driver);
+            begin_request_body(connection, buffers, options, driver, H, E);
             if connection.phase == ConnectionPhase.ReadingBody {
                 consume_request_body(connection, buffers, options, driver, H, E);
             }
@@ -52,7 +52,8 @@ fn read_connection<D, H, E>(connection: Connection&, buffers: ConnectionBuffers,
     }
 }
 
-fn begin_request_body<D>(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions, driver: D&) {
+fn begin_request_body<D, H, E>(connection: Connection&, buffers: ConnectionBuffers,
+    options: ServerOptions, driver: D&) {
     var fields: HeaderView[>..] = [];
     var index: HeaderIndexEntry[>..] = [];
     let parsed = parse_head(buffers.input[..connection.scan.head_bytes], fields, index, options.limits);
@@ -63,6 +64,11 @@ fn begin_request_body<D>(connection: Connection&, buffers: ConnectionBuffers, op
     connection.http_minor = parsed.http_minor;
     let cap = min(options.limits.body_bytes_max, options.body_limits.bytes_max);
     let admission = body_admission(driver, parsed, cap);
+    if admission.complete_response {
+        // Generated method responses need no body and must precede 100 Continue.
+        build_reply(connection, buffers, options, driver, H, E);
+        return;
+    }
     let expectation = request_expectation(fields);
     var status = admission.status;
     if status == 0 && expectation == 417 {

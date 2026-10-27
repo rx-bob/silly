@@ -9,6 +9,11 @@ struct RouteOptions {
     body: BodyMode = BodyMode.Buffered,
     body_bytes_max: i64 = -1,
 }
+struct RoutePolicy {
+    head_from_get: bool = false,
+    automatic_options: bool = false,
+    method_not_allowed: bool = false,
+}
 struct RouteLimits {
     routes_max: i64 = 1024,
     path_bytes_max: i64 = 8192,
@@ -61,6 +66,8 @@ struct RouteEntry<R> {
     captures: i64,
     action: R,
     options: RouteOptions,
+    policy: RoutePolicy = RoutePolicy {
+    },
 }
 struct Router<R> {
     entries: RouteEntry<R>[>..]&,
@@ -73,6 +80,8 @@ struct Router<R> {
     prefix_start: i64 = 0,
     prefix_bytes: i64 = 0,
     prepared: bool = false,
+    policy: RoutePolicy = RoutePolicy {
+    },
 }
 struct RoutePlan<R> {
     entries: const RouteEntry<R>[:],
@@ -84,6 +93,9 @@ struct RoutePlan<R> {
 enum RouteMatchResult {
     Matched,
     NotFound,
+    GeneratedOptions,
+    MethodNotAllowed,
+    InvalidMethod,
     InvalidPath,
     PathLimit,
     SegmentLimit,

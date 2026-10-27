@@ -4,6 +4,7 @@ namespace silly;
 import.request;
 import.request_headers;
 import.response;
+import.route_captures;
 import.stream_contract;
 
 struct Context<A, S> {
@@ -11,6 +12,12 @@ struct Context<A, S> {
     response: Response&,
     app: A&,
     stream_start: StreamStart<S>? = null,
+    route_captures: RouteCaptures = RouteCaptures {
+    },
+}
+
+fn param<A, S>(ctx: Context<A, S> & , name: u8[:]) -> FieldValue {
+    return param(ctx.route_captures, name);
 }
 
 fn start_stream<A, S>(ctx: Context<A, S> & , status: i32, state: S) -> ResponseError {

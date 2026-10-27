@@ -1,6 +1,7 @@
 // Request matching visits compiled metadata only; no declaration parsing or allocation.
 namespace silly;
 
+import.headers;
 import.http_head_types;
 import.http_request_line;
 import.request;
@@ -66,35 +67,67 @@ fn match_route<R>(plan: RoutePlan<R>, method: u8[:], target: u8[:]) -> RouteMatc
         };
     }
     let path = route_request_path(target);
-    let check = route_request_check(path, plan.limits);
+    var check = route_request_check(path, plan.limits);
+    if method.len > plan.limits.method_bytes_max || !valid_header_name(method) {
+        check = RouteMatchResult.InvalidMethod;
+    }
     if check != RouteMatchResult.Matched {
         return RouteMatch {
             result: check,
             ..
         };
     }
+    var result = route_select(plan, method, path);
+    if result.route_id >= 0 && plan.entries[result.route_id].captures > plan.limits.captures_max {
+        result.result = RouteMatchResult.CaptureLimit;
+    }
+    return result;
+}
+
+// Existing explicit registrations, including application fallbacks, always run first.
+fn route_select<R>(plan: RoutePlan<R>, method: u8[:], path: u8[:]) -> RouteMatch {
+    var selected = route_find(plan, path, method, true);
+    if selected < 0 && method == "HEAD" {
+        let get = route_find(plan, path, "GET", false);
+        if get >= 0 && plan.entries[get].policy.head_from_get {
+            selected = get;
+        }
+    }
+    if selected >= 0 {
+        return RouteMatch {
+            result: RouteMatchResult.Matched,
+            route_id: selected,
+        };
+    }
+    selected = route_find(plan, path, "", false);
+    var result = RouteMatch {
+    };
+    if selected >= 0 {
+        let policy = plan.entries[selected].policy;
+        if method == "OPTIONS" && policy.automatic_options {
+            result.result = RouteMatchResult.GeneratedOptions;
+            result.route_id = selected;
+        } else if policy.method_not_allowed {
+            result.result = RouteMatchResult.MethodNotAllowed;
+            result.route_id = selected;
+        }
+    }
+    return result;
+}
+
+// Empty method selects the best path across methods; no request-time pattern parsing.
+fn route_find<R>(plan: RoutePlan<R>, path: u8[:], method: u8[:], accept_any: bool) -> i64 {
     var selected: i64 = -1;
     for index in plan.entries.len {
-        let entry = plan.entries[index];
         let registered = route_method(plan, index);
-        if (registered.len == 0 || registered == method) && route_entry_matches(plan, entry, path) {
+        if (method.len == 0 || registered == method || (accept_any && registered.len == 0))
+            && route_entry_matches(plan, plan.entries[index], path) {
             if selected < 0 || route_precedes(plan, index, selected) {
                 selected = index;
             }
         }
     }
-    var result = RouteMatch {
-        route_id: selected,
-        ..
-    };
-    if selected >= 0 {
-        result.result = if plan.entries[selected].captures > plan.limits.captures_max {
-            RouteMatchResult.CaptureLimit
-        } else {
-            RouteMatchResult.Matched
-        };
-    }
-    return result;
+    return selected;
 }
 
 fn route_segment_end(path: u8[:], start: i64) -> i64 {
@@ -179,6 +212,7 @@ fn route_capture<R>(plan: RoutePlan<R>, route_id: i64, target: u8[:], name: u8[:
     let path = route_request_path(target);
     let entry = plan.entries[route_id];
     if route_request_check(path, plan.limits) != RouteMatchResult.Matched
+        || entry.captures > plan.limits.captures_max
         || !route_entry_matches(plan, entry, path) {
         return FieldValue {
         };

@@ -4,8 +4,10 @@ namespace silly;
 import std;
 
 import.response_errors;
+import.route_captures;
 import.route_match;
 import.route_plan;
+import.route_policy;
 import.route_types;
 import.router;
 import.server;
@@ -123,7 +125,17 @@ fn run_prepared_server_with_errors<R, H, E>(options: ServerOptions, listener: si
 fn dispatch_route<R, H>(plan: RoutePlan<R>&, ctx: BufferedContext&) {
     let selected = match_route(plan, ctx.request.method, ctx.request.target);
     if selected.result == RouteMatchResult.Matched {
-        H(ctx, plan.entries[selected.route_id].action);
+        var routed = BufferedContext {
+            request: ctx.request,
+            response: ctx.response,
+            app: ctx.app,
+            route_captures: route_captures(plan, selected.route_id, ctx.request.target),
+            ..
+        };
+        H(routed, plan.entries[selected.route_id].action);
+    } else if selected.result == RouteMatchResult.GeneratedOptions
+        || selected.result == RouteMatchResult.MethodNotAllowed {
+        route_method_reply(plan, ctx, selected.result);
     } else if selected.result == RouteMatchResult.NotFound {
         empty_reply(ctx, 404);
     } else if selected.result == RouteMatchResult.PathLimit {
@@ -131,4 +143,26 @@ fn dispatch_route<R, H>(plan: RoutePlan<R>&, ctx: BufferedContext&) {
     } else {
         empty_reply(ctx, 400);
     }
+}
+
+// Generated method responses use the ordinary bounded response builder and error renderer.
+fn route_method_reply<R>(plan: RoutePlan<R>, ctx: BufferedContext&, result: RouteMatchResult) {
+    var allow: u8[>..] = [];
+    let error = route_allow(allow, plan, ctx.request.target, ctx.response.limits.header_bytes_max);
+    if error != ResponseError.None {
+        fail_response(ctx.response, error);
+        return;
+    }
+    let status: i32 = if result == RouteMatchResult.GeneratedOptions {
+        204
+    } else {
+        405
+    };
+    if begin_response(ctx.response, status) != ResponseError.None {
+        return;
+    }
+    if add_header(ctx.response, "Allow", allow) != ResponseError.None {
+        return;
+    }
+    prepare_response(ctx.response);
 }

@@ -24,6 +24,7 @@ struct ConnectionBuffers {
     staging: u8[:],
 }
 struct BodyAdmission {
+    complete_response: bool = false,
     status: i32 = 0,
     cap: i64,
 }
@@ -41,7 +42,9 @@ fn body_admission(driver: NoState&, parsed: ParsedHead, cap: i64) -> BodyAdmissi
 
 fn body_admission<R>(driver: RoutePlan<R>&, parsed: ParsedHead, cap: i64) -> BodyAdmission {
     let selected = match_route(driver, parsed.method, parsed.target);
-    if selected.result != RouteMatchResult.Matched {
+    if selected.result != RouteMatchResult.Matched
+        && selected.result != RouteMatchResult.GeneratedOptions
+        && selected.result != RouteMatchResult.MethodNotAllowed {
         return BodyAdmission {
             status: if selected.result == RouteMatchResult.NotFound {
                 404
@@ -51,6 +54,14 @@ fn body_admission<R>(driver: RoutePlan<R>&, parsed: ParsedHead, cap: i64) -> Bod
                 400
             },
             cap: cap,
+        };
+    }
+    if selected.result == RouteMatchResult.GeneratedOptions
+        || selected.result == RouteMatchResult.MethodNotAllowed {
+        return BodyAdmission {
+            complete_response: true,
+            cap: cap,
+            ..
         };
     }
     let route_cap = driver.entries[selected.route_id].options.body_bytes_max;
