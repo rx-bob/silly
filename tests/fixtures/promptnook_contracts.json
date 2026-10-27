@@ -1,0 +1,1644 @@
+{
+  "scope": "deterministic framework contracts; not business parity",
+  "source_root": "/Users/bob/repos/nook/promptnook/backend/goose",
+  "routes": [
+    {
+      "family": "Main",
+      "requirement": "R02",
+      "source": "server/routes.goose",
+      "method": "GET",
+      "path": "/",
+      "target": "/",
+      "listener": "api"
+    },
+    {
+      "family": "Main",
+      "requirement": "R02",
+      "source": "server/routes.goose",
+      "method": "GET",
+      "path": "/healthz",
+      "target": "/healthz",
+      "listener": "api"
+    },
+    {
+      "family": "Main",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "GET",
+      "path": "/db/health",
+      "target": "/db/health",
+      "listener": "api"
+    },
+    {
+      "family": "Main",
+      "requirement": "R02",
+      "source": "server/routes.goose",
+      "method": "",
+      "path": "/api/test/reset-db",
+      "target": "/api/test/reset-db",
+      "listener": "api"
+    },
+    {
+      "family": "User",
+      "requirement": "R03",
+      "source": "server/user_routes.goose",
+      "method": "GET",
+      "path": "/api/user/auth/config",
+      "target": "/api/user/auth/config",
+      "listener": "api"
+    },
+    {
+      "family": "User",
+      "requirement": "R03",
+      "source": "server/user_routes.goose",
+      "method": "POST",
+      "path": "/api/user/signup",
+      "target": "/api/user/signup",
+      "listener": "api"
+    },
+    {
+      "family": "User",
+      "requirement": "R03",
+      "source": "server/user_routes.goose",
+      "method": "GET",
+      "path": "/api/user/preferences",
+      "target": "/api/user/preferences",
+      "listener": "api"
+    },
+    {
+      "family": "User",
+      "requirement": "R03",
+      "source": "server/user_routes.goose",
+      "method": "PUT",
+      "path": "/api/user/preferences",
+      "target": "/api/user/preferences",
+      "listener": "api"
+    },
+    {
+      "family": "User",
+      "requirement": "R03",
+      "source": "server/user_routes.goose",
+      "method": "GET",
+      "path": "/api/user/auth/sso/login",
+      "target": "/api/user/auth/sso/login",
+      "listener": "api"
+    },
+    {
+      "family": "User",
+      "requirement": "R03",
+      "source": "server/user_routes.goose",
+      "method": "GET",
+      "path": "/api/user/auth/sso/callback",
+      "target": "/api/user/auth/sso/callback",
+      "listener": "api"
+    },
+    {
+      "family": "User",
+      "requirement": "R03",
+      "source": "server/user_routes.goose",
+      "method": "POST",
+      "path": "/api/user/login",
+      "target": "/api/user/login",
+      "listener": "api"
+    },
+    {
+      "family": "User",
+      "requirement": "R03",
+      "source": "server/user_routes.goose",
+      "method": "GET",
+      "path": "/api/user/me",
+      "target": "/api/user/me",
+      "listener": "api"
+    },
+    {
+      "family": "User",
+      "requirement": "R03",
+      "source": "server/user_routes.goose",
+      "method": "PATCH",
+      "path": "/api/user/me",
+      "target": "/api/user/me",
+      "listener": "api"
+    },
+    {
+      "family": "User",
+      "requirement": "R03",
+      "source": "server/user_routes.goose",
+      "method": "POST",
+      "path": "/api/user/auth/logout",
+      "target": "/api/user/auth/logout",
+      "listener": "api"
+    },
+    {
+      "family": "User",
+      "requirement": "R03",
+      "source": "server/user_routes.goose",
+      "method": "POST",
+      "path": "/api/user/auth/sso/logout",
+      "target": "/api/user/auth/sso/logout",
+      "listener": "api"
+    },
+    {
+      "family": "User",
+      "requirement": "R03",
+      "source": "server/user_routes.goose",
+      "method": "POST",
+      "path": "/api/user/auth/change-password",
+      "target": "/api/user/auth/change-password",
+      "listener": "api"
+    },
+    {
+      "family": "Workspaces",
+      "requirement": "R04",
+      "source": "server/workspace_routes.goose",
+      "method": "GET",
+      "path": "/api/workspaces",
+      "target": "/api/workspaces",
+      "listener": "api"
+    },
+    {
+      "family": "Workspaces",
+      "requirement": "R04",
+      "source": "server/workspace_routes.goose",
+      "method": "POST",
+      "path": "/api/workspaces",
+      "target": "/api/workspaces",
+      "listener": "api"
+    },
+    {
+      "family": "Workspaces",
+      "requirement": "R04",
+      "source": "server/workspace_routes.goose",
+      "method": "GET",
+      "path": "/api/workspaces/:id/share",
+      "target": "/api/workspaces/raw%2Fid/share",
+      "listener": "api"
+    },
+    {
+      "family": "Workspaces",
+      "requirement": "R04",
+      "source": "server/workspace_routes.goose",
+      "method": "GET",
+      "path": "/api/workspaces/:id/tree",
+      "target": "/api/workspaces/raw%2Fid/tree",
+      "listener": "api"
+    },
+    {
+      "family": "Export",
+      "requirement": "R05",
+      "source": "server/workspace_routes.goose",
+      "method": "GET",
+      "path": "/api/workspaces/:id/export",
+      "target": "/api/workspaces/raw%2Fid/export",
+      "listener": "api"
+    },
+    {
+      "family": "Workspaces",
+      "requirement": "R04",
+      "source": "server/workspace_routes.goose",
+      "method": "PATCH",
+      "path": "/api/workspaces/:id",
+      "target": "/api/workspaces/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Workspaces",
+      "requirement": "R04",
+      "source": "server/workspace_routes.goose",
+      "method": "PUT",
+      "path": "/api/workspaces/:id",
+      "target": "/api/workspaces/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Workspaces",
+      "requirement": "R04",
+      "source": "server/workspace_routes.goose",
+      "method": "DELETE",
+      "path": "/api/workspaces/:id",
+      "target": "/api/workspaces/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Workspaces",
+      "requirement": "R04",
+      "source": "server/workspace_routes.goose",
+      "method": "POST",
+      "path": "/api/workspaces/:id/collaborators",
+      "target": "/api/workspaces/raw%2Fid/collaborators",
+      "listener": "api"
+    },
+    {
+      "family": "Workspaces",
+      "requirement": "R04",
+      "source": "server/workspace_routes.goose",
+      "method": "PATCH",
+      "path": "/api/workspaces/:id/collaborators/:email",
+      "target": "/api/workspaces/raw%2Fid/collaborators/a%2Bb@example.test",
+      "listener": "api"
+    },
+    {
+      "family": "Workspaces",
+      "requirement": "R04",
+      "source": "server/workspace_routes.goose",
+      "method": "DELETE",
+      "path": "/api/workspaces/:id/collaborators/:email",
+      "target": "/api/workspaces/raw%2Fid/collaborators/a%2Bb@example.test",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "POST",
+      "path": "/api/nodes",
+      "target": "/api/nodes",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "POST",
+      "path": "/api/nodes/:id/duplicate",
+      "target": "/api/nodes/raw%2Fid/duplicate",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "PUT",
+      "path": "/api/nodes/:id/variables",
+      "target": "/api/nodes/raw%2Fid/variables",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "PATCH",
+      "path": "/api/nodes/:id/variables",
+      "target": "/api/nodes/raw%2Fid/variables",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "GET",
+      "path": "/api/nodes/:id/value-sets",
+      "target": "/api/nodes/raw%2Fid/value-sets",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "POST",
+      "path": "/api/nodes/:id/value-sets",
+      "target": "/api/nodes/raw%2Fid/value-sets",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "PATCH",
+      "path": "/api/nodes/:id/value-sets/:set",
+      "target": "/api/nodes/raw%2Fid/value-sets/set-1",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "PUT",
+      "path": "/api/nodes/:id/value-sets/:set",
+      "target": "/api/nodes/raw%2Fid/value-sets/set-1",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "PATCH",
+      "path": "/api/nodes/:id/collaborators/:email",
+      "target": "/api/nodes/raw%2Fid/collaborators/a%2Bb@example.test",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "DELETE",
+      "path": "/api/nodes/:id/collaborators/:email",
+      "target": "/api/nodes/raw%2Fid/collaborators/a%2Bb@example.test",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "GET",
+      "path": "/api/nodes/:id/variables",
+      "target": "/api/nodes/raw%2Fid/variables",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "GET",
+      "path": "/api/nodes/:id/share",
+      "target": "/api/nodes/raw%2Fid/share",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "POST",
+      "path": "/api/nodes/:id/collaborators",
+      "target": "/api/nodes/raw%2Fid/collaborators",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "DELETE",
+      "path": "/api/nodes/:id/value-sets/:set",
+      "target": "/api/nodes/raw%2Fid/value-sets/set-1",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "POST",
+      "path": "/api/nodes/:id/value-sets/:set/duplicate",
+      "target": "/api/nodes/raw%2Fid/value-sets/set-1/duplicate",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "PATCH",
+      "path": "/api/nodes/:id",
+      "target": "/api/nodes/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "PUT",
+      "path": "/api/nodes/:id",
+      "target": "/api/nodes/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Nodes",
+      "requirement": "R06",
+      "source": "server/node_routes.goose",
+      "method": "DELETE",
+      "path": "/api/nodes/:id",
+      "target": "/api/nodes/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Prompts",
+      "requirement": "R07",
+      "source": "server/prompt_routes.goose",
+      "method": "GET",
+      "path": "/api/prompts/:id",
+      "target": "/api/prompts/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Prompts",
+      "requirement": "R07",
+      "source": "server/prompt_routes.goose",
+      "method": "PATCH",
+      "path": "/api/prompts/:id",
+      "target": "/api/prompts/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Prompts",
+      "requirement": "R07",
+      "source": "server/prompt_routes.goose",
+      "method": "PUT",
+      "path": "/api/prompts/:id",
+      "target": "/api/prompts/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Prompts",
+      "requirement": "R07",
+      "source": "server/prompt_routes.goose",
+      "method": "PATCH",
+      "path": "/api/prompts/:id/storage",
+      "target": "/api/prompts/raw%2Fid/storage",
+      "listener": "api"
+    },
+    {
+      "family": "Prompts",
+      "requirement": "R07",
+      "source": "server/prompt_routes.goose",
+      "method": "PUT",
+      "path": "/api/prompts/:id/storage",
+      "target": "/api/prompts/raw%2Fid/storage",
+      "listener": "api"
+    },
+    {
+      "family": "Prompts",
+      "requirement": "R07",
+      "source": "server/prompt_routes.goose",
+      "method": "GET",
+      "path": "/api/prompts/:id/share",
+      "target": "/api/prompts/raw%2Fid/share",
+      "listener": "api"
+    },
+    {
+      "family": "Prompts",
+      "requirement": "R07",
+      "source": "server/prompt_routes.goose",
+      "method": "GET",
+      "path": "/api/prompts/:id/collaborators",
+      "target": "/api/prompts/raw%2Fid/collaborators",
+      "listener": "api"
+    },
+    {
+      "family": "Prompts",
+      "requirement": "R07",
+      "source": "server/prompt_routes.goose",
+      "method": "POST",
+      "path": "/api/prompts/:id/collaborators",
+      "target": "/api/prompts/raw%2Fid/collaborators",
+      "listener": "api"
+    },
+    {
+      "family": "Prompts",
+      "requirement": "R07",
+      "source": "server/prompt_routes.goose",
+      "method": "GET",
+      "path": "/api/prompts/:id/versions",
+      "target": "/api/prompts/raw%2Fid/versions",
+      "listener": "api"
+    },
+    {
+      "family": "Prompts",
+      "requirement": "R07",
+      "source": "server/prompt_routes.goose",
+      "method": "GET",
+      "path": "/api/prompts/:id/versions/:version",
+      "target": "/api/prompts/raw%2Fid/versions/123",
+      "listener": "api"
+    },
+    {
+      "family": "Prompts",
+      "requirement": "R07",
+      "source": "server/prompt_routes.goose",
+      "method": "POST",
+      "path": "/api/prompts/:id/versions/:version/restore",
+      "target": "/api/prompts/raw%2Fid/versions/123/restore",
+      "listener": "api"
+    },
+    {
+      "family": "Prompts",
+      "requirement": "R07",
+      "source": "server/prompt_routes.goose",
+      "method": "PATCH",
+      "path": "/api/prompts/:id/collaborators/:email",
+      "target": "/api/prompts/raw%2Fid/collaborators/a%2Bb@example.test",
+      "listener": "api"
+    },
+    {
+      "family": "Prompts",
+      "requirement": "R07",
+      "source": "server/prompt_routes.goose",
+      "method": "DELETE",
+      "path": "/api/prompts/:id/collaborators/:email",
+      "target": "/api/prompts/raw%2Fid/collaborators/a%2Bb@example.test",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "GET",
+      "path": "/api/projects",
+      "target": "/api/projects",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "POST",
+      "path": "/api/projects",
+      "target": "/api/projects",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "POST",
+      "path": "/api/projects/:id/initiatives",
+      "target": "/api/projects/raw%2Fid/initiatives",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "GET",
+      "path": "/api/projects/:id/epics",
+      "target": "/api/projects/raw%2Fid/epics",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "POST",
+      "path": "/api/projects/:id/epics",
+      "target": "/api/projects/raw%2Fid/epics",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "GET",
+      "path": "/api/projects/:id",
+      "target": "/api/projects/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "PATCH",
+      "path": "/api/projects/:id",
+      "target": "/api/projects/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "DELETE",
+      "path": "/api/projects/:id",
+      "target": "/api/projects/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "GET",
+      "path": "/api/projects/:id/stories",
+      "target": "/api/projects/raw%2Fid/stories",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "GET",
+      "path": "/api/projects/:id/initiatives",
+      "target": "/api/projects/raw%2Fid/initiatives",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "GET",
+      "path": "/api/projects/:id/epics/:nested_id/stories",
+      "target": "/api/projects/raw%2Fid/epics/nested%2Fid/stories",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "POST",
+      "path": "/api/projects/:id/epics/:nested_id/stories",
+      "target": "/api/projects/raw%2Fid/epics/nested%2Fid/stories",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "PATCH",
+      "path": "/api/projects/:id/epics/:nested_id",
+      "target": "/api/projects/raw%2Fid/epics/nested%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Projects",
+      "requirement": "R08",
+      "source": "server/project_routes.goose",
+      "method": "DELETE",
+      "path": "/api/projects/:id/epics/:nested_id",
+      "target": "/api/projects/raw%2Fid/epics/nested%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "GET",
+      "path": "/api/initiatives/:id",
+      "target": "/api/initiatives/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "PATCH",
+      "path": "/api/initiatives/:id",
+      "target": "/api/initiatives/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "PATCH",
+      "path": "/api/stories/:id",
+      "target": "/api/stories/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "DELETE",
+      "path": "/api/stories/:id",
+      "target": "/api/stories/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "PATCH",
+      "path": "/api/stories/:id/status",
+      "target": "/api/stories/raw%2Fid/status",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "GET",
+      "path": "/api/epics/:id",
+      "target": "/api/epics/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "PATCH",
+      "path": "/api/epics/:id",
+      "target": "/api/epics/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "DELETE",
+      "path": "/api/epics/:id",
+      "target": "/api/epics/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "DELETE",
+      "path": "/api/initiatives/:id",
+      "target": "/api/initiatives/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "PATCH",
+      "path": "/api/initiatives/:id/status",
+      "target": "/api/initiatives/raw%2Fid/status",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "DELETE",
+      "path": "/api/stories/:id/links/:nested_id",
+      "target": "/api/stories/raw%2Fid/links/nested%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "POST",
+      "path": "/api/stories/:id/criteria",
+      "target": "/api/stories/raw%2Fid/criteria",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "POST",
+      "path": "/api/stories/:id/activity",
+      "target": "/api/stories/raw%2Fid/activity",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "POST",
+      "path": "/api/stories/:id/links",
+      "target": "/api/stories/raw%2Fid/links",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "PATCH",
+      "path": "/api/epics/:id/status",
+      "target": "/api/epics/raw%2Fid/status",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "GET",
+      "path": "/api/epics/:id/stories",
+      "target": "/api/epics/raw%2Fid/stories",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "POST",
+      "path": "/api/epics/:id/stories",
+      "target": "/api/epics/raw%2Fid/stories",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "GET",
+      "path": "/api/stories/:id",
+      "target": "/api/stories/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "WorkItems",
+      "requirement": "R08",
+      "source": "server/project_work_item_routes.goose",
+      "method": "POST",
+      "path": "/api/stories/:id/criteria/:index",
+      "target": "/api/stories/raw%2Fid/criteria/0",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "GET",
+      "path": "/api/ideas",
+      "target": "/api/ideas",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas",
+      "target": "/api/ideas",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "GET",
+      "path": "/api/ideas/:id",
+      "target": "/api/ideas/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "PATCH",
+      "path": "/api/ideas/:id",
+      "target": "/api/ideas/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "DELETE",
+      "path": "/api/ideas/:id",
+      "target": "/api/ideas/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas/:id/archive",
+      "target": "/api/ideas/raw%2Fid/archive",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas/:id/unarchive",
+      "target": "/api/ideas/raw%2Fid/unarchive",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas/:id/trash",
+      "target": "/api/ideas/raw%2Fid/trash",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas/:id/untrash",
+      "target": "/api/ideas/raw%2Fid/untrash",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas/:id/promote/project",
+      "target": "/api/ideas/raw%2Fid/promote/project",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas/:id/promote/initiative",
+      "target": "/api/ideas/raw%2Fid/promote/initiative",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas/:id/promote/epic",
+      "target": "/api/ideas/raw%2Fid/promote/epic",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas/:id/promote/story",
+      "target": "/api/ideas/raw%2Fid/promote/story",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas/:id/links/prompts",
+      "target": "/api/ideas/raw%2Fid/links/prompts",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "DELETE",
+      "path": "/api/ideas/:id/links/prompts/:target_id",
+      "target": "/api/ideas/raw%2Fid/links/prompts/linked%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas/:id/links/projects",
+      "target": "/api/ideas/raw%2Fid/links/projects",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "DELETE",
+      "path": "/api/ideas/:id/links/projects/:target_id",
+      "target": "/api/ideas/raw%2Fid/links/projects/linked%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas/:id/links/initiatives",
+      "target": "/api/ideas/raw%2Fid/links/initiatives",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "DELETE",
+      "path": "/api/ideas/:id/links/initiatives/:target_id",
+      "target": "/api/ideas/raw%2Fid/links/initiatives/linked%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas/:id/links/epics",
+      "target": "/api/ideas/raw%2Fid/links/epics",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "DELETE",
+      "path": "/api/ideas/:id/links/epics/:target_id",
+      "target": "/api/ideas/raw%2Fid/links/epics/linked%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "POST",
+      "path": "/api/ideas/:id/links/stories",
+      "target": "/api/ideas/raw%2Fid/links/stories",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "DELETE",
+      "path": "/api/ideas/:id/links/stories/:target_id",
+      "target": "/api/ideas/raw%2Fid/links/stories/linked%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "GET",
+      "path": "/api/projects/:id/ideas",
+      "target": "/api/projects/raw%2Fid/ideas",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "GET",
+      "path": "/api/initiatives/:id/ideas",
+      "target": "/api/initiatives/raw%2Fid/ideas",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "GET",
+      "path": "/api/epics/:id/ideas",
+      "target": "/api/epics/raw%2Fid/ideas",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "GET",
+      "path": "/api/stories/:id/ideas",
+      "target": "/api/stories/raw%2Fid/ideas",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "GET",
+      "path": "/api/projects/:id/initiatives/:nested_id/ideas",
+      "target": "/api/projects/raw%2Fid/initiatives/nested%2Fid/ideas",
+      "listener": "api"
+    },
+    {
+      "family": "Ideas",
+      "requirement": "R09",
+      "source": "ideas/lifecycle_dispatch.goose",
+      "method": "GET",
+      "path": "/api/projects/:id/epics/:nested_id/ideas",
+      "target": "/api/projects/raw%2Fid/epics/nested%2Fid/ideas",
+      "listener": "api"
+    },
+    {
+      "family": "Flagged",
+      "requirement": "R10",
+      "source": "flagged/dispatch.goose",
+      "method": "GET",
+      "path": "/api/flagged",
+      "target": "/api/flagged",
+      "listener": "api"
+    },
+    {
+      "family": "Flagged",
+      "requirement": "R10",
+      "source": "flagged/dispatch.goose",
+      "method": "POST",
+      "path": "/api/flagged",
+      "target": "/api/flagged",
+      "listener": "api"
+    },
+    {
+      "family": "Flagged",
+      "requirement": "R10",
+      "source": "flagged/dispatch.goose",
+      "method": "GET",
+      "path": "/api/flagged/count",
+      "target": "/api/flagged/count",
+      "listener": "api"
+    },
+    {
+      "family": "Flagged",
+      "requirement": "R10",
+      "source": "flagged/dispatch.goose",
+      "method": "PATCH",
+      "path": "/api/flagged/:id",
+      "target": "/api/flagged/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Flagged",
+      "requirement": "R10",
+      "source": "flagged/dispatch.goose",
+      "method": "PUT",
+      "path": "/api/flagged/:id",
+      "target": "/api/flagged/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "Flagged",
+      "requirement": "R10",
+      "source": "flagged/dispatch.goose",
+      "method": "DELETE",
+      "path": "/api/flagged/:id",
+      "target": "/api/flagged/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "McpSettings",
+      "requirement": "R12",
+      "source": "mcp_settings/integration_routes.goose",
+      "method": "GET",
+      "path": "/api/mcp/token",
+      "target": "/api/mcp/token",
+      "listener": "api"
+    },
+    {
+      "family": "McpSettings",
+      "requirement": "R12",
+      "source": "mcp_settings/integration_routes.goose",
+      "method": "POST",
+      "path": "/api/mcp/token/regenerate",
+      "target": "/api/mcp/token/regenerate",
+      "listener": "api"
+    },
+    {
+      "family": "McpSettings",
+      "requirement": "R12",
+      "source": "mcp_settings/integration_routes.goose",
+      "method": "GET",
+      "path": "/api/mcp/usage",
+      "target": "/api/mcp/usage",
+      "listener": "api"
+    },
+    {
+      "family": "McpSettings",
+      "requirement": "R12",
+      "source": "mcp_settings/integration_routes.goose",
+      "method": "GET",
+      "path": "/api/mcp/usage/hourly",
+      "target": "/api/mcp/usage/hourly",
+      "listener": "api"
+    },
+    {
+      "family": "McpSettings",
+      "requirement": "R12",
+      "source": "mcp_settings/integration_routes.goose",
+      "method": "GET",
+      "path": "/api/mcp/calls/recent",
+      "target": "/api/mcp/calls/recent",
+      "listener": "api"
+    },
+    {
+      "family": "McpSettings",
+      "requirement": "R12",
+      "source": "mcp_settings/integration_routes.goose",
+      "method": "GET",
+      "path": "/api/mcp/integrations",
+      "target": "/api/mcp/integrations",
+      "listener": "api"
+    },
+    {
+      "family": "McpSettings",
+      "requirement": "R12",
+      "source": "mcp_settings/integration_routes.goose",
+      "method": "POST",
+      "path": "/api/mcp/integrations",
+      "target": "/api/mcp/integrations",
+      "listener": "api"
+    },
+    {
+      "family": "McpSettings",
+      "requirement": "R12",
+      "source": "mcp_settings/integration_routes.goose",
+      "method": "DELETE",
+      "path": "/api/mcp/integrations/:id",
+      "target": "/api/mcp/integrations/raw%2Fid",
+      "listener": "api"
+    },
+    {
+      "family": "McpSettings",
+      "requirement": "R12",
+      "source": "mcp_settings/integration_routes.goose",
+      "method": "POST",
+      "path": "/api/mcp/test-connection",
+      "target": "/api/mcp/test-connection",
+      "listener": "api"
+    },
+    {
+      "family": "McpProtocol",
+      "requirement": "R11",
+      "source": "mcp_protocol/dispatch.goose",
+      "method": "GET",
+      "path": "/api/v1/prompts/list",
+      "target": "/api/v1/prompts/list",
+      "listener": "api"
+    },
+    {
+      "family": "McpProtocol",
+      "requirement": "R11",
+      "source": "mcp_protocol/dispatch.goose",
+      "method": "GET",
+      "path": "/api/v1/prompts/detail",
+      "target": "/api/v1/prompts/detail?id=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "McpProtocol",
+      "requirement": "R11",
+      "source": "mcp_protocol/dispatch.goose",
+      "method": "POST",
+      "path": "/api/v1/prompts/run",
+      "target": "/api/v1/prompts/run",
+      "listener": "api"
+    },
+    {
+      "family": "McpProtocol",
+      "requirement": "R11",
+      "source": "mcp_protocol/dispatch.goose",
+      "method": "POST",
+      "path": "/api/v1/prompts/create",
+      "target": "/api/v1/prompts/create",
+      "listener": "api"
+    },
+    {
+      "family": "McpProtocol",
+      "requirement": "R11",
+      "source": "mcp_protocol/dispatch.goose",
+      "method": "DELETE",
+      "path": "/api/v1/prompts/delete",
+      "target": "/api/v1/prompts/delete?id=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "McpProtocol",
+      "requirement": "R10/R11",
+      "source": "mcp_protocol/dispatch.goose;flagged/dispatch.goose",
+      "method": "POST",
+      "path": "/api/v1/flagged/report",
+      "target": "/api/v1/flagged/report",
+      "listener": "api"
+    },
+    {
+      "family": "AdminHealth",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin-health",
+      "target": "/api/admin-health",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin/workspaces/by-id",
+      "target": "/api/admin/workspaces/by-id?workspace_id=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "POST",
+      "path": "/api/admin/workspaces/edit",
+      "target": "/api/admin/workspaces/edit",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin/prompts/by-id",
+      "target": "/api/admin/prompts/by-id?prompt_id=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin/ideas/by-id",
+      "target": "/api/admin/ideas/by-id?idea_id=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "POST",
+      "path": "/api/admin/ideas/edit",
+      "target": "/api/admin/ideas/edit",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin/projects/by-id",
+      "target": "/api/admin/projects/by-id?project_id=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin/nodes/value-sets",
+      "target": "/api/admin/nodes/value-sets?node_id=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "POST",
+      "path": "/api/admin/value-sets/edit",
+      "target": "/api/admin/value-sets/edit",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin/meta",
+      "target": "/api/admin/meta",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin/users/by-email",
+      "target": "/api/admin/users/by-email?email=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin/users/by-id",
+      "target": "/api/admin/users/by-id?user_id=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin/users/directory",
+      "target": "/api/admin/users/directory",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin/users/workspaces",
+      "target": "/api/admin/users/workspaces?user_id=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "POST",
+      "path": "/api/admin/users/edit",
+      "target": "/api/admin/users/edit",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "POST",
+      "path": "/api/admin/prompts/content/edit",
+      "target": "/api/admin/prompts/content/edit",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "POST",
+      "path": "/api/admin/tree-nodes/edit",
+      "target": "/api/admin/tree-nodes/edit",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R14",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin/raw/exact",
+      "target": "/api/admin/raw/exact?key=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R14",
+      "source": "admin/admin.goose",
+      "method": "POST",
+      "path": "/api/admin/raw/exact",
+      "target": "/api/admin/raw/exact?key=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R14",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin/raw/prefix",
+      "target": "/api/admin/raw/prefix?prefix=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "GET",
+      "path": "/api/admin/workspaces/tree",
+      "target": "/api/admin/workspaces/tree?workspace_id=raw%2Fkey&empty=&repeat=1&repeat=2",
+      "listener": "api"
+    },
+    {
+      "family": "PortalProxy",
+      "requirement": "R15",
+      "source": "portal/portal.goose",
+      "method": "",
+      "path": "/portal-api/*path",
+      "target": "/portal-api/api/workspaces/raw%2Fid?env=test&cursor=a%2Bb",
+      "listener": "portal"
+    },
+    {
+      "family": "PortalStatic",
+      "requirement": "R15",
+      "source": "portal/portal.goose;http_posix.c",
+      "method": "GET",
+      "path": "/*path",
+      "target": "/nested/app.js",
+      "listener": "portal"
+    },
+    {
+      "family": "PortalStatic",
+      "requirement": "R15",
+      "source": "portal/portal.goose;http_posix.c",
+      "method": "HEAD",
+      "path": "/*path",
+      "target": "/nested/app.js",
+      "listener": "portal"
+    },
+    {
+      "family": "ApiFallback",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "",
+      "path": "/api/test/*path",
+      "target": "/api/test/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "ApiFallback",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "",
+      "path": "/api/user/*path",
+      "target": "/api/user/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "ApiFallback",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "",
+      "path": "/api/workspaces/*path",
+      "target": "/api/workspaces/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "ApiFallback",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "",
+      "path": "/api/nodes/*path",
+      "target": "/api/nodes/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "ApiFallback",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "",
+      "path": "/api/prompts/*path",
+      "target": "/api/prompts/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "ApiFallback",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "",
+      "path": "/api/projects/*path",
+      "target": "/api/projects/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "ApiFallback",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "",
+      "path": "/api/ideas/*path",
+      "target": "/api/ideas/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "ApiFallback",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "",
+      "path": "/api/initiatives/*path",
+      "target": "/api/initiatives/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "ApiFallback",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "",
+      "path": "/api/epics/*path",
+      "target": "/api/epics/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "ApiFallback",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "",
+      "path": "/api/stories/*path",
+      "target": "/api/stories/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "ApiFallback",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "",
+      "path": "/api/flagged/*path",
+      "target": "/api/flagged/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "ApiFallback",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "",
+      "path": "/api/mcp/*path",
+      "target": "/api/mcp/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "Admin",
+      "requirement": "R13",
+      "source": "admin/admin.goose",
+      "method": "",
+      "path": "/api/admin/*path",
+      "target": "/api/admin/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "McpProtocol",
+      "requirement": "R11",
+      "source": "mcp_protocol/dispatch.goose",
+      "method": "",
+      "path": "/api/v1/*path",
+      "target": "/api/v1/unknown/deep",
+      "listener": "api"
+    },
+    {
+      "family": "GlobalFallback",
+      "requirement": "R02",
+      "source": "server/fallback_routes.goose",
+      "method": "",
+      "path": "/*path",
+      "target": "/outside",
+      "listener": "api"
+    },
+    {
+      "family": "Main",
+      "requirement": "R02",
+      "source": "server/routes.goose",
+      "method": "OPTIONS",
+      "path": "/*path",
+      "target": "/outside",
+      "listener": "api"
+    }
+  ],
+  "intentional_deltas": [
+    "Exact route termination replaces legacy accidental prefix matches.",
+    "Portal proxy mount uses a segment boundary; /portal-apiary is static.",
+    "Static HEAD writer suppresses body; legacy native implementation emitted it."
+  ],
+  "unresolved": [
+    "Business stores, authentication/session algorithms, ZIP construction, DB migrations and native adapters remain application-owned.",
+    "E10.S2 owns final combined compatibility certification."
+  ]
+}
