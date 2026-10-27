@@ -17,6 +17,7 @@ enum ClientError {
     Internal,
     Stale,
     Busy,
+    Decoding,
 }
 enum ClientStatus {
     Queued,
@@ -29,7 +30,8 @@ enum ClientPhase {
     Connect,
     Response,
     Body,
-    Complete
+    Complete,
+    Upload
 }
 struct ClientOptions {
     concurrency_max: i64 = 4,
@@ -43,13 +45,16 @@ struct ClientOptions {
     total_timeout_ms: i64 = 0,
     poll_timeout_ms: i64 = 100,
     ca_file: const u8[:] = "",
+    request_header_bytes_max: i64 = 16384,
+    request_body_bytes_max: i64 = 64 * 1024 * 1024,
 }
 struct Client {
     epoch: i64 = 0
 }
 struct ClientRequest {
     epoch: i64 = 0,
-    token: i64 = 0
+    token: i64 = 0,
+    redirect_hops: i64 = 0,
 }
 struct ClientStartResult {
     ok: bool,

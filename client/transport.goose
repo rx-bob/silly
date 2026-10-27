@@ -7,10 +7,11 @@ import.types;
 
 fn start_client(options: ClientOptions = ClientOptions {
     }) -> ClientStartResult {
-    let fields: i64[10] = [options.concurrency_max, options.queue_max,
+    let fields: i64[12] = [options.concurrency_max, options.queue_max,
         options.response_header_bytes_max, options.response_body_bytes_max,
         options.queue_timeout_ms, options.connect_timeout_ms, options.first_byte_timeout_ms,
-        options.idle_timeout_ms, options.total_timeout_ms, options.poll_timeout_ms];
+        options.idle_timeout_ms, options.total_timeout_ms, options.poll_timeout_ms,
+        options.request_header_bytes_max, options.request_body_bytes_max];
     let result = silly_client_start(fields, options.ca_file);
     return ClientStartResult {
         ok: result > 0,
@@ -77,6 +78,7 @@ fn snapshot(request: ClientRequest) -> ClientSnapshot {
             1 => ClientPhase.Connect,
             2 => ClientPhase.Response,
             3 => ClientPhase.Body,
+            5 => ClientPhase.Upload,
             _ => ClientPhase.Complete,
         },
         native_code: fields[3],

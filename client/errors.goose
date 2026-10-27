@@ -19,6 +19,7 @@ fn client_error(code: i64) -> ClientError {
         11 => ClientError.Protocol,
         13 => ClientError.Stale,
         14 => ClientError.Busy,
+        15 => ClientError.Decoding,
         _ => ClientError.Internal,
     };
 }
