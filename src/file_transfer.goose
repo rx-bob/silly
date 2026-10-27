@@ -5,42 +5,13 @@ import std;
 
 import.file_conditions;
 import.file_metadata;
+import.file_multipart;
+import.file_range_response;
+import.file_transfer_types;
 import.file_types;
 import.files;
 import.http_date;
 import.stream_contract;
-
-enum FileTransferError {
-    None,
-    Native,
-    InvalidRange,
-    UnexpectedEnd,
-    OutputLimit,
-    InvalidState,
-}
-struct FileTransfer {
-    file: OwnedFile = OwnedFile {
-    },
-    offset: i64 = 0,
-    length: i64 = -1,
-    poll_interval_ms: i64 = 1,
-    size: i64 = -1,
-    position: i64 = 0,
-    remaining: i64 = 0,
-    initialized: bool = false,
-    reading: bool = false,
-    closed: bool = false,
-    error: FileTransferError = FileTransferError.None,
-    system_error: i32 = 0,
-    static_metadata: bool = false,
-    metadata_published: bool = false,
-    conditional: bool = false,
-    none_match_present: bool = false,
-    none_match_valid: bool = true,
-    none_match: u8[..4096] = [],
-    modified_since: u8[..128] = [],
-    configured_etag: u8[..256] = [],
-}
 
 fn file_step(state: FileTransfer&, event: StreamEvent, out: ChunkWriter&) -> StreamStep {
     return file_step_with_validator(state, event, out, default_file_validator);
@@ -72,6 +43,10 @@ fn file_step_with_validator<V>(state: FileTransfer&, event: StreamEvent, out: Ch
     }
     if state.static_metadata && !state.metadata_published {
         return publish_file_metadata(state, out, V);
+    }
+    if state.multipart.enabled && prepare_file_part(state.multipart, state.position, state.remaining, state.size,
+        state.content_type) {
+        return emit_file_part(state.multipart, out);
     }
     if state.remaining == 0 {
         finish_file_transfer(state);
@@ -184,6 +159,10 @@ fn publish_file_metadata<V>(state: FileTransfer&, out: ChunkWriter&) -> StreamSt
     target.status = 200;
     if static_not_modified(state, result.metadata, validator) {
         target.status = 304;
+    }
+    target.accept_ranges = state.range_enabled;
+    if target.status == 200 && !select_file_ranges(state, result.metadata, validator, target) {
+        return file_transfer_failure(state, FileTransferError.Native);
     }
     target.ready = true;
     state.metadata_published = true;

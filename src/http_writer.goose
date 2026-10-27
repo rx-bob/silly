@@ -228,6 +228,9 @@ fn response_extra_reason(status: i32) -> const u8[:] {
     if status == 206 {
         return "Partial Content";
     }
+    if status == 416 {
+        return "Range Not Satisfiable";
+    }
     if status == 301 {
         return "Moved Permanently";
     }

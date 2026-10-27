@@ -170,7 +170,45 @@ fn bodyless_once() {
     }
 }
 
+fn range_headers() {
+    var slot = silly::StreamSlot<State> {
+    };
+    var fields: silly::HeaderField[>..] = [];
+    var bytes: u8[>..] = [];
+    var output: u8[>..] = [];
+    var response = silly::Response {
+        limits: silly::Limits {
+        },
+        header_fields: fields,
+        header_bytes: bytes,
+        output: output,
+        phase: silly::ResponsePhase.Prepared,
+        ..
+    };
+    assert(silly::add_header(response, "Content-Type", "text/plain") == silly::ResponseError.None);
+    assert(silly::add_header(response, "X-Test", "kept") == silly::ResponseError.None);
+    assert(silly::retain_stream_head(slot, response, silly::ResponseWireOptions {
+        }, 1024)
+        == silly::ResponseError.None);
+    slot.producer.continuation.metadata.content_type.append("multipart/byteranges; boundary=test");
+    slot.producer.continuation.metadata.content_range.append("bytes 0-1/9");
+    slot.producer.continuation.metadata.accept_ranges = true;
+    fields.clear();
+    bytes.clear();
+    assert(silly::restore_stream_headers(slot, response) == silly::ResponseError.None);
+    assert(fields.len == 4);
+    assert(silly::header_view(fields, bytes, 0).name == "X-Test");
+    assert(silly::header_view(fields, bytes, 1).value == "multipart/byteranges; boundary=test");
+    assert(silly::header_view(fields, bytes, 2).value == "bytes 0-1/9");
+    assert(silly::header_view(fields, bytes, 3).value == "bytes");
+    fields.clear();
+    bytes.clear();
+    response.limits.header_count_max = 3;
+    assert(silly::restore_stream_headers(slot, response) == silly::ResponseError.HeaderCountLimit);
+}
+
 fn::main() {
+    stream_metadata_test::range_headers();
     stream_metadata_test::retention_limits();
     stream_metadata_test::missing_metadata();
     stream_metadata_test::fixed_length_failures();

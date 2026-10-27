@@ -1,0 +1,1 @@
+c_sources = ["static_metadata_fixture.c"];

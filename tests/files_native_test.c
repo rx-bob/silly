@@ -28,6 +28,7 @@ extern int64_t silly_files_cancel(int64_t, int64_t);
 extern int64_t silly_files_stop(int64_t);
 extern int64_t silly_files_finish(int64_t);
 extern int64_t silly_files_pending(int64_t);
+extern int64_t silly_files_random(files_bytes);
 
 static pthread_mutex_t hook_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t hook_changed = PTHREAD_COND_INITIALIZER;
@@ -327,7 +328,17 @@ static void cleanup(void) {
     assert(rmdir(outside_path) == 0);
     assert(rmdir(base) == 0);
 }
+static void boundary_entropy(void) {
+    uint8_t storage[18];
+    memset(storage, 0xa5, sizeof storage);
+    assert(silly_files_random((files_bytes){storage + 1, 15}) == -EINVAL);
+    assert(silly_files_random((files_bytes){storage + 1, 17}) == -EINVAL);
+    assert(silly_files_random((files_bytes){NULL, 16}) == -EINVAL);
+    assert(silly_files_random((files_bytes){storage + 1, 16}) == 0);
+    assert(storage[0] == 0xa5 && storage[17] == 0xa5);
+}
 int main(void) {
+    boundary_entropy();
     setup();
     int64_t root = silly_files_root_open(bytes(root_path));
     assert(root >= 0 && root <= INT32_MAX);

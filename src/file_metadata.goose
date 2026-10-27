@@ -21,6 +21,7 @@ struct FileMetadataResult {
     error: i32 = 0,
 }
 struct FileValidator {
+    last_modified_strong: bool = false,
     etag: u8[..256] = [],
 }
 

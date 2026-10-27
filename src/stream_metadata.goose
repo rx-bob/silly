@@ -41,8 +41,6 @@ fn finalize_stream_head<S>(slot: StreamSlot<S>&, connection: Connection&,
     var fields: HeaderField[>..] = [];
     var bytes: u8[>..] = [];
     var output: u8[>..] = [];
-    fields.append(slot.retained_fields);
-    bytes.append(slot.retained_headers);
     var response = Response {
         limits: slot.retained_limits,
         header_fields: fields,
@@ -53,12 +51,9 @@ fn finalize_stream_head<S>(slot: StreamSlot<S>&, connection: Connection&,
         status: metadata.status,
         ..
     };
-    if metadata.etag.len > 0 && add_header(response, "ETag", metadata.etag) != ResponseError.None {
-        return response.error;
-    }
-    if metadata.last_modified.len > 0
-        && add_header(response, "Last-Modified", metadata.last_modified) != ResponseError.None {
-        return response.error;
+    let error = restore_stream_headers(slot, response);
+    if error != ResponseError.None {
+        return error;
     }
     var options = ResponseWireOptions {
         http_minor: connection.http_minor,
@@ -90,5 +85,42 @@ fn finalize_stream_head<S>(slot: StreamSlot<S>&, connection: Connection&,
         -1
     };
     slot.deferred = false;
+    return ResponseError.None;
+}
+
+fn restore_stream_headers<S>(slot: StreamSlot<S>&, response: Response&) -> ResponseError {
+    let metadata = slot.producer.continuation.metadata;
+    for index in slot.retained_fields.len {
+        if !valid_response_offsets(slot.retained_fields[index], slot.retained_headers.len) {
+            return ResponseError.InvalidHeader;
+        }
+        let field = header_view(slot.retained_fields, slot.retained_headers, index);
+        if (metadata.content_type.len > 0 && header_name_equal(field.name, "Content-Type"))
+            || (metadata.content_range.len > 0 && header_name_equal(field.name, "Content-Range"))
+            || (metadata.accept_ranges && header_name_equal(field.name, "Accept-Ranges")) {
+            continue;
+        }
+        if add_header(response, field.name, field.value) != ResponseError.None {
+            return response.error;
+        }
+    }
+    if metadata.etag.len > 0 && add_header(response, "ETag", metadata.etag) != ResponseError.None {
+        return response.error;
+    }
+    if metadata.last_modified.len > 0
+        && add_header(response, "Last-Modified", metadata.last_modified) != ResponseError.None {
+        return response.error;
+    }
+    if metadata.content_type.len > 0
+        && add_header(response, "Content-Type", metadata.content_type) != ResponseError.None {
+        return response.error;
+    }
+    if metadata.content_range.len > 0
+        && add_header(response, "Content-Range", metadata.content_range) != ResponseError.None {
+        return response.error;
+    }
+    if metadata.accept_ranges && add_header(response, "Accept-Ranges", "bytes") != ResponseError.None {
+        return response.error;
+    }
     return ResponseError.None;
 }

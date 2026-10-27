@@ -7,17 +7,21 @@ import.context;
 import.file_conditions;
 import.file_response;
 import.file_transfer;
+import.file_transfer_types;
 import.file_types;
 import.headers;
 import.request;
 import.request_headers;
 import.response;
+import.static_file_ranges;
 
 struct StaticFileOptions {
     content_type: const u8[:] = "",
     charset: const u8[:] = "utf-8",
     etag: const u8[:] = "",
     conditions: bool = true,
+    ranges: bool = true,
+    ranges_max: i64 = 16,
     pending_bytes_max: i64 = 4096,
     poll_interval_ms: i64 = 1,
 }
@@ -25,6 +29,9 @@ struct StaticFileOptions {
 fn static_file_response<A>(ctx: Context<A, FileTransfer> & , file: OwnedFile&, path: u8[:],
     options: StaticFileOptions = StaticFileOptions {
     }) -> ResponseError {
+    if options.ranges_max < 1 || options.ranges_max > 16 {
+        return ResponseError.InvalidLimits;
+    }
     if options.etag.len > 256 || (options.etag.len != 0 && !valid_etag(options.etag)) {
         return ResponseError.InvalidHeader;
     }
@@ -38,6 +45,9 @@ fn static_file_response<A>(ctx: Context<A, FileTransfer> & , file: OwnedFile&, p
     } else {
         ""
     };
+    if mime.len > 512 || (charset.len > 0 && (mime.len > 502 || charset.len > 502 - mime.len)) {
+        return ResponseError.HeaderBytesLimit;
+    }
     let error = file_response(ctx, file, FileOptions {
             content_type: mime,
             charset: charset,
@@ -57,6 +67,13 @@ fn static_file_response<A>(ctx: Context<A, FileTransfer> & , file: OwnedFile&, p
     sink.state.configured_etag.append(options.etag);
     sink.state.conditional = options.conditions && (ctx.request.method == "GET" || ctx.request.method == "HEAD");
     capture_file_conditions(sink.state, ctx.request);
+    sink.state.range_enabled = options.ranges;
+    sink.state.ranges_max = options.ranges_max;
+    sink.state.content_type.append(mime);
+    if charset.len != 0 {
+        sink.state.content_type.append(str("; charset=", charset));
+    }
+    capture_file_ranges(sink.state, ctx.request);
     return ResponseError.None;
 }
 

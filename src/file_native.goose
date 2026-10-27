@@ -27,3 +27,5 @@ extern fn silly_files_finish(epoch: i64) -> i64;
 extern fn silly_files_pending(epoch: i64) -> i64;
 
 extern fn silly_files_metadata(epoch: i64, token: i64, output: i64[:]) -> i64;
+
+extern fn silly_files_random(output: u8[:]) -> i64;

@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/random.h>
 
 typedef struct { uint8_t *data; int64_t len; } files_bytes;
 enum { FILES_SLOTS = 64, FILES_WORKERS = 4, FILES_PATH = 4096, FILES_CHUNK = 4096 };
@@ -391,4 +392,21 @@ int64_t silly_files_metadata(int64_t epoch, int64_t token, files_ints output) {
     }
     pthread_mutex_unlock(&files_lock);
     return -error;
+}
+
+// Bounded OS entropy for multipart boundaries; no process-global pseudo-random state.
+int64_t silly_files_random(files_bytes output) {
+    if (!output.data || output.len != 16) return -EINVAL;
+#ifdef __linux__
+    size_t filled = 0;
+    while (filled < 16) {
+        ssize_t count = getrandom(output.data + filled, 16 - filled, 0);
+        if (count < 0) { if (errno == EINTR) continue; return -errno; }
+        if (!count) return -EIO;
+        filled += (size_t)count;
+    }
+#else
+    if (getentropy(output.data, 16) != 0) return -errno;
+#endif
+    return 0;
 }
