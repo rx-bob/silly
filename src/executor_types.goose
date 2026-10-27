@@ -21,6 +21,7 @@ struct ExecutorOptions {
     task_timeout_ms: i64 = 30000,
 }
 struct ExecWork {
+    listener_id: i64 = 0,
     key: TransferKey,
     lane: i64,
     deadline_ms: i64,
@@ -56,6 +57,7 @@ struct LaneStop<Tag> {
     stop: bool = true
 }
 struct ExecutorOwner {
+    control_epoch: i64 = 0,
     options: ExecutorOptions = ExecutorOptions {
     },
     owner: i64 = -1,
@@ -63,6 +65,7 @@ struct ExecutorOwner {
     outstanding: i64 = 0,
 }
 struct LaneStart {
+    control_epoch: i64 = 0,
     options: ExecutorOptions,
     server: WorkerOptions,
     lane: i64,

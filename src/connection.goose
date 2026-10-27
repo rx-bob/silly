@@ -20,6 +20,7 @@ enum ConnectionPhase {
 }
 
 struct Connection {
+    listener_id: i64 = 0,
     socket: silly_transport::Descriptor = silly_transport::Descriptor {
     },
     generation: u64 = 0,
@@ -44,6 +45,9 @@ struct Connection {
     head_sent: i64 = 0,
     body_sent: i64 = 0,
     active_ms: i64 = 0,
+    phase_started_ms: i64 = 0,
+    timed_phase: ConnectionPhase = ConnectionPhase.Free,
+    draining: bool = false,
     completion: CompletionData = CompletionData {
     },
     completion_pending: bool = false,
@@ -76,6 +80,7 @@ fn reset_connection(connection: Connection&) {
         return;
     }
     let next = Connection {
+        listener_id: connection.listener_id,
         socket: connection.socket,
         generation: connection.generation,
         request_generation: connection.request_generation + 1,

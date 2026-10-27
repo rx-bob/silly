@@ -17,6 +17,7 @@ import.response;
 import.response_errors;
 import.response_policy_headers;
 import.response_wire_types;
+import.runtime_control;
 import.server_body;
 import.server_executor;
 import.server_observer;
@@ -40,6 +41,9 @@ fn build_reply<D, H, E, O>(connection: Connection&, buffers: ConnectionBuffers, 
         connection.completion.execution = outcome;
         if outcome == ExecutionOutcome.Queued {
             connection.phase = ConnectionPhase.Executing;
+        } else if outcome == ExecutionOutcome.Abandoned && driver_control_epoch(driver) > 0
+            && runtime_control_stage(driver_control_epoch(driver)) != 0 {
+            release_connection(connection);
         } else {
             request_error(connection, buffers, options, ResponseFailure {
                     kind: ResponseFailureKind.Admission,
@@ -58,6 +62,7 @@ fn build_reply<D, H, E, O>(connection: Connection&, buffers: ConnectionBuffers, 
         return;
     }
     let request = Request {
+        listener_id: connection.listener_id,
         method: parsed.method,
         target: parsed.target,
         headers: fields,
@@ -100,6 +105,11 @@ fn application_reply<D, H, O>(connection: Connection&, buffers: ConnectionBuffer
         app: app,
         audit: connection.completion,
     };
+    if !permit_inline(driver) {
+        release_connection(connection);
+        return ResponseFailure {
+        };
+    }
     H(driver, ctx);
     connection.completion.status = response.status;
     connection.completion.handler_outcome = handler_outcome(response, RouteSelection.Matched);

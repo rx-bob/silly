@@ -41,6 +41,7 @@ fn execute_lane_work<R, A, H, L, E>(start: LaneStart, work: ExecWork,
     var body: u8[65536] = [0; 65536];
     var staging: u8[1] = [0];
     var connection = Connection {
+        listener_id: work.listener_id,
         request_bytes: work.body.len,
         close_after_reply: work.close_after_reply,
         completion: work.completion,
@@ -93,6 +94,7 @@ fn build_lane_response<D, H, O, E>(connection: Connection&, buffers: ConnectionB
     }
     connection.http_minor = parsed.http_minor;
     let request = Request {
+        listener_id: connection.listener_id,
         method: parsed.method,
         target: parsed.target,
         headers: fields,

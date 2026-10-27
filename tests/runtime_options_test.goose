@@ -10,6 +10,13 @@ fn::main() {
     };
     assert(silly::valid_runtime_options(options));
     assert(silly::runtime_connections_reserved(options) == 34);
+    options.shutdown_timeout_ms = -1;
+    assert(!silly::valid_runtime_options(options));
+    options.shutdown_timeout_ms = 0;
+    assert(silly::valid_runtime_options(options));
+    options.signal_token = -1;
+    assert(!silly::valid_runtime_options(options));
+    options.signal_token = 0;
     options.worker.limits.body_bytes_max = 1024;
     options.worker.limits.output_bytes_max = 1024;
     options.workers = 2;

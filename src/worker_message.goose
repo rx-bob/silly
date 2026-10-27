@@ -14,6 +14,7 @@ import.worker_options;
 
 // Copied launch data: wake transfers to this owner; report_wake is borrowed until all owners join.
 struct WorkerStart {
+    control_epoch: i64 = 0,
     options: WorkerOptions,
     owner: i64,
     wake: i32,
@@ -33,6 +34,7 @@ struct IoOwner3 {
 }
 
 struct AcceptMessage<Tag> {
+    listener_id: i64 = 0,
     fd: i32,
 }
 
@@ -56,8 +58,10 @@ struct RuntimeLease {
     held: bool = true,
 }
 
-fn publish_accept<Tag>(wake: silly_transport::Descriptor, socket: silly_transport::Descriptor&) -> PublishResult {
+fn publish_accept<Tag>(wake: silly_transport::Descriptor, socket: silly_transport::Descriptor&,
+    listener_id: i64 = 0) -> PublishResult {
     if !qput(AcceptMessage<Tag> {
+            listener_id: listener_id,
             fd: socket.fd
         }) {
         return PublishResult.Full;

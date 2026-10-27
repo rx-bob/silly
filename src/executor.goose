@@ -4,6 +4,7 @@ namespace silly;
 import std;
 
 import.executor_types;
+import.runtime_control;
 import.transport;
 import.worker_message;
 
@@ -44,6 +45,16 @@ fn submit_executor(owner: ExecutorOwner&, work: ExecWork) -> ExecutionOutcome {
     if work.deadline_ms <= clock.count {
         return ExecutionOutcome.Deadline;
     }
+    if !runtime_control_submit_begin(owner.control_epoch) {
+        return ExecutionOutcome.Abandoned;
+    }
+    let result = publish_executor_work(owner, work);
+    runtime_control_submit_end(owner.control_epoch);
+    return result;
+}
+
+// Submission ownership spans the publication and wake; lanes wait for these producers before exit.
+fn publish_executor_work(owner: ExecutorOwner&, work: ExecWork) -> ExecutionOutcome {
     var queued = false;
     if work.lane == 0 {
         queued = qput(LaneTask<ExecutorLane0> {

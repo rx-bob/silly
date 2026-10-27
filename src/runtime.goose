@@ -4,36 +4,36 @@ namespace silly;
 import std;
 
 import.executor;
+import.runtime_control;
 import.runtime_executor;
+import.runtime_listeners;
 import.runtime_mailbox;
+import.runtime_monitor;
 import.runtime_supervisor;
 import.server_options;
+import.shutdown;
+import.shutdown_types;
 import.transport;
 import.worker_message;
 import.worker_options;
 
-struct RuntimeWorker {
-    thread: i64 = -1,
-    reader: silly_transport::Descriptor = silly_transport::Descriptor {
-    },
-    writer: silly_transport::Descriptor = silly_transport::Descriptor {
-    },
-    ready: bool = false,
-}
-
-// Consumes listener and wake on every path. W is a concrete application thread_fn;
-// C is copied flat startup configuration, never an app reference or a borrowed route plan.
+// Single-listener convenience; the group form also carries listener_id into each request.
 fn run_runtime<C, W>(options: RuntimeOptions, listener: silly_transport::Descriptor,
     wake: silly_transport::Descriptor, seed: C) -> ServerResult {
-    fn no_lanes(settings: RuntimeOptions, workers: RuntimeWorker[:], lanes: RuntimeWorker[:],
-        report_wake: i32, config: C) {
-    }
-    return run_runtime_entry(options, listener, wake, seed, false, W, no_lanes);
+    var listeners: silly_transport::Descriptor[1] = [listener];
+    return run_runtime_listeners(options, listeners, wake, seed, W);
 }
 
-fn run_runtime_entry<C, W, S>(options: RuntimeOptions, listener: silly_transport::Descriptor,
+fn run_runtime_listeners<C, W>(options: RuntimeOptions, listeners: silly_transport::Descriptor[:],
+    wake: silly_transport::Descriptor, seed: C) -> ServerResult {
+    fn no_lanes(settings: RuntimeOptions, workers: RuntimeWorker[:], lanes: RuntimeWorker[:],
+        report_wake: i32, config: C, epoch: i64) {
+    }
+    return run_runtime_entry(options, listeners, wake, seed, false, W, no_lanes);
+}
+
+fn run_runtime_entry<C, W, S>(options: RuntimeOptions, listeners: silly_transport::Descriptor[:],
     wake: silly_transport::Descriptor, seed: C, executor: bool) -> ServerResult {
-    var incoming = listener;
     var control = wake;
     var result = ServerResult {
         ok: false,
@@ -42,69 +42,98 @@ fn run_runtime_entry<C, W, S>(options: RuntimeOptions, listener: silly_transport
         ..
     };
     if valid_runtime_options(options) && (executor || options.executor.lanes == 0)
-        && listener.fd >= 0 && wake.fd >= 0 && listener.fd != wake.fd {
+        && valid_runtime_listeners(listeners, wake) {
         qlimit<RuntimeLease>(1);
         if qput(RuntimeLease {
             }) {
-            result = runtime_owned(options, incoming, control, seed, W, S);
-            let lease,
-            held = qpoll<RuntimeLease>();
-            assert(held);
+            result = runtime_owned(options, listeners, control, seed, W, S);
+            if result.drain == DrainStatus.None {
+                let lease, held = qpoll<RuntimeLease>();
+                assert(held);
+            }
         } else {
-            result.message = "an io runtime is already active";
+            result.error = if runtime_control_poisoned() {
+                ServerError.WorkerAborted
+            } else {
+                ServerError.ShutdownBusy
+            };
+            result.message = "runtime ownership is retained or poisoned";
         }
     }
-    silly_transport::close(incoming);
-    if control.fd != listener.fd {
-        silly_transport::close(control);
-    }
+    close_runtime_inputs(listeners, control);
     return result;
 }
 
-fn runtime_owned<C, W, S>(options: RuntimeOptions, listener: silly_transport::Descriptor,
+fn runtime_owned<C, W, S>(options: RuntimeOptions, listeners: silly_transport::Descriptor[:],
     wake: silly_transport::Descriptor, seed: C) -> ServerResult {
     initialize_runtime_mailboxes(options.accept_queue_max);
     initialize_executor_mailboxes(options.executor, options.workers);
-    var workers: RuntimeWorker[4] = [RuntimeWorker {
-        }; 4];
-    var lanes: RuntimeWorker[4] = [RuntimeWorker {
-        }; 4];
+    qlimit<RuntimeExit>(8);
+    var handle = ShutdownHandle {
+        worker_count: options.workers,
+        lane_count: options.executor.lanes,
+        accept_capacity: options.accept_queue_max,
+        task_capacity: options.executor.queue_max,
+        reply_capacity: options.executor.outstanding_per_owner,
+        ..
+    };
+    let opened = open_shutdown_owners(handle);
+    if !opened.ok {
+        return opened;
+    }
+    handle.epoch = runtime_control_begin();
+    if handle.epoch <= 0 {
+        close_runtime_owners(handle.workers);
+        close_runtime_owners(handle.lanes);
+        silly_transport::close(handle.reports_reader);
+        silly_transport::close(handle.reports_writer);
+        return invalid_shutdown_result(ServerError.ShutdownBusy);
+    }
+    handle.active = true;
+    let epoch = handle.epoch;
+    let report_wake = handle.reports_writer.fd;
+    S(options, handle.workers[..options.workers], handle.lanes[..options.executor.lanes], report_wake, seed, epoch);
+    spawn_runtime_workers(options, handle.workers[..options.workers], handle.lanes[..options.executor.lanes],
+        report_wake, seed, epoch, W);
+    let result = runtime_supervise(options, listeners, wake, handle);
+    remember_shutdown_result(handle, result);
+    runtime_control_close(epoch);
+    close_runtime_listeners(listeners);
+    begin_runtime_drain(handle);
+    if !result.ok {
+        runtime_control_cancel(epoch);
+        notify_shutdown_owners(handle);
+    }
+    return resume_shutdown(handle, options.shutdown_timeout_ms);
+}
+
+fn open_shutdown_owners(handle: ShutdownHandle&) -> ServerResult {
     var reports = silly_transport::wake_pair();
     if reports.status != silly_transport::IoStatus.Ready {
-        return runtime_io_failure(ServerError.Wake, silly_transport::IoResult {
-                status: reports.status,
-                error: reports.error,
-                ..
-            });
+        return ServerResult {
+            ok: false,
+            error: ServerError.Wake,
+            system_error: reports.error,
+            ..
+        };
     }
-    let opened = open_runtime_owners(workers[..options.workers], lanes[..options.executor.lanes]);
+    let opened = open_runtime_owners(handle.workers[..handle.worker_count], handle.lanes[..handle.lane_count]);
     if !opened.ok {
         silly_transport::close(reports.reader);
         silly_transport::close(reports.writer);
         return opened;
     }
-    S(options, workers[..options.workers], lanes[..options.executor.lanes], reports.writer.fd, seed);
-    spawn_runtime_workers(options, workers[..options.workers], lanes[..options.executor.lanes],
-        reports.writer.fd, seed, W);
-    var result = runtime_supervise(options, listener, wake, reports.reader,
-        workers[..options.workers], lanes[..options.executor.lanes]);
-    stop_runtime_owners(workers[..options.workers], lanes[..options.executor.lanes]);
-    // All producers/readers have joined. Only now reclaim resource messages and close wake writers.
-    reclaim_runtime_mailboxes(options.accept_queue_max);
-    reclaim_runtime_executor_mailboxes(options.executor);
-    close_runtime_owners(workers);
-    close_runtime_owners(lanes);
-    silly_transport::close(reports.reader);
-    silly_transport::close(reports.writer);
-    collect_runtime_results(result);
-    return result;
+    handle.reports_reader = reports.reader;
+    handle.reports_writer = reports.writer;
+    return opened;
 }
 
 fn spawn_runtime_workers<C, W>(options: RuntimeOptions, workers: RuntimeWorker[:],
-    lanes: RuntimeWorker[:], report_wake: i32, seed: C) {
+    lanes: RuntimeWorker[:], report_wake: i32, seed: C, epoch: i64) {
     let writers = runtime_owner_writers(lanes);
     for owner in workers.len {
-        workers[owner].thread = thread_spawn(W, WorkerStart {
+        workers[owner].thread = thread_spawn_contained(W, WorkerStart {
+                control_epoch: epoch,
                 options: options.worker,
                 owner: owner,
                 wake: workers[owner].reader.fd,
@@ -113,6 +142,7 @@ fn spawn_runtime_workers<C, W>(options: RuntimeOptions, workers: RuntimeWorker[:
                 lane_writers: writers,
             }, seed);
         workers[owner].reader.fd = -1;
+        start_runtime_monitor(workers[owner], false, owner, report_wake);
     }
 }
 

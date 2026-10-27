@@ -5,6 +5,8 @@ import.body_types;
 import.lifecycle_types;
 import.limits;
 import.route_types;
+import.server_errors;
+import.shutdown_types;
 import.transport;
 
 struct ServerOptions {
@@ -19,24 +21,15 @@ struct ServerOptions {
     accepts_per_turn: i64 = 16,
     dispatches_per_turn: i64 = 16,
     idle_timeout_ms: i64 = 30000,
+    head_timeout_ms: i64 = 30000,
+    body_timeout_ms: i64 = 30000,
+    write_timeout_ms: i64 = 30000,
     poll_timeout_ms: i32 = 100,
     body_limits: BodyLimits = BodyLimits {
     },
     body_read_bytes_max: i64 = 16384,
     route_limits: RouteLimits = RouteLimits {
     },
-}
-
-enum ServerError {
-    None,
-    InvalidOptions,
-    Listen,
-    Accept,
-    Wake,
-    Clock,
-    Poll,
-    Routes,
-    Hook,
 }
 
 struct ServerResult {
@@ -47,6 +40,10 @@ struct ServerResult {
     route_issue: RouteIssue = RouteIssue {
     },
     hook_failure: HookResult = HookResult.Ok,
+    drain: DrainStatus = DrainStatus.None,
+    pending: ShutdownHandle = ShutdownHandle {
+    },
+    unrecovered_owners: u8 = 0,
 }
 
 fn valid_server_options(options: ServerOptions) -> bool {
@@ -60,6 +57,7 @@ fn valid_server_options(options: ServerOptions) -> bool {
     }
     if options.work_bytes_per_turn <= 0 || options.accepts_per_turn <= 0 || options.dispatches_per_turn <= 0
         || options.accepts_per_turn > options.connections_max || options.idle_timeout_ms <= 0
+        || options.head_timeout_ms <= 0 || options.body_timeout_ms <= 0 || options.write_timeout_ms <= 0
         || options.poll_timeout_ms <= 0 || options.poll_timeout_ms > options.idle_timeout_ms {
         return false;
     }

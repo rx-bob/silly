@@ -5,6 +5,7 @@ import.body_types;
 import.http_head_types;
 import.lifecycle_types;
 import.response;
+import.timeout_types;
 import.transport;
 
 enum ResponseFailureKind {
@@ -19,6 +20,7 @@ enum ResponseFailureKind {
 }
 
 struct ResponseFailure {
+    timeout: TimeoutKind = TimeoutKind.None,
     kind: ResponseFailureKind = ResponseFailureKind.None,
     status: i32 = 500,
     error: ResponseError = ResponseError.None,

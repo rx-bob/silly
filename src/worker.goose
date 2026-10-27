@@ -5,11 +5,13 @@ import std;
 
 import.connection;
 import.lifecycle_types;
+import.runtime_control;
 import.server;
 import.server_loop;
 import.server_observer;
 import.server_options;
 import.transport;
+import.worker_drain;
 import.worker_executor;
 import.worker_message;
 
@@ -48,8 +50,10 @@ fn worker_loop<Tag, D, E, H, O>(storage: ServerStorage&, options: ServerOptions,
         if storage.hooks.failure != HookResult.Ok {
             return hook_server_result(storage.hooks);
         }
+        let stage = worker_control_stage(storage, driver, O);
         let stop, stopping = qpoll<WorkerStop<Tag>>();
-        if stopping {
+        if stage >= 2 || stage < 0 || (stage == 1 && worker_connections_empty(storage.connections))
+            || (stopping && stage == 0) {
             return ServerResult {
                 ok: true,
                 ..
@@ -73,7 +77,8 @@ fn worker_loop<Tag, D, E, H, O>(storage: ServerStorage&, options: ServerOptions,
             return worker_io_failure(ServerError.Clock, clock);
         }
         let completed = drain_executor_results<Tag>(storage, options, driver, clock.count, E);
-        let exhausted = drain_worker_accepts<Tag>(storage.connections, options.accepts_per_turn, clock.count);
+        let exhausted = drain_worker_accepts<Tag>(storage.connections, options.accepts_per_turn, clock.count,
+            driver_control_epoch(driver));
         prepare_poll(storage, silly_transport::Descriptor {
             }, wake);
         let timeout = if exhausted || completed {
@@ -92,6 +97,11 @@ fn worker_loop<Tag, D, E, H, O>(storage: ServerStorage&, options: ServerOptions,
         if now.status != silly_transport::IoStatus.Ready {
             return worker_io_failure(ServerError.Clock, now);
         }
+        // Shutdown can race the poll; cancel incomplete readers before any further parsing.
+        let current = worker_control_stage(storage, driver, O);
+        if current >= 2 || current < 0 {
+            continue;
+        }
         service_connections(storage, options, now.count, driver, H, E, O);
     }
     return ServerResult {
@@ -102,7 +112,7 @@ fn worker_loop<Tag, D, E, H, O>(storage: ServerStorage&, options: ServerOptions,
 
 // Refusal closes immediately; no descriptor can accumulate outside the mailbox or fixed slots.
 // True means the drain budget ran out, so the next poll must not sleep.
-fn drain_worker_accepts<Tag>(connections: Connection[:], budget: i64, now: i64) -> bool {
+fn drain_worker_accepts<Tag>(connections: Connection[:], budget: i64, now: i64, epoch: i64 = 0) -> bool {
     for attempt in budget {
         let message, present = qpoll<AcceptMessage<Tag>>();
         if !present {
@@ -112,16 +122,19 @@ fn drain_worker_accepts<Tag>(connections: Connection[:], budget: i64, now: i64) 
             fd: message.fd
         };
         let index = available_connection(connections);
-        if index < 0 {
+        if index < 0 || runtime_control_stage(epoch) != 0 {
             silly_transport::close(socket);
             continue;
         }
         let generation = connections[index].generation + 1;
         connections[index] = Connection {
+            listener_id: message.listener_id,
             socket: socket,
             generation: generation,
             phase: ConnectionPhase.Reading,
             active_ms: now,
+            phase_started_ms: now,
+            timed_phase: ConnectionPhase.Reading,
             ..
         };
     }

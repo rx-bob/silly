@@ -10,6 +10,7 @@ import.lifecycle_driver;
 import.route_lifecycle;
 import.route_plan;
 import.router;
+import.runtime_control;
 import.runtime_routes;
 import.server_observer;
 import.transport;
@@ -121,6 +122,7 @@ fn executor_lane_loop<Tag, R, A, H, L, E>(start: LaneStart, driver: LifecycleDri
         let notification = silly_transport::drain_wake(control);
         let stop, stopping = qpoll<LaneStop<Tag>>();
         if stopping || notification.status == silly_transport::IoStatus.Closed || hooks.failure != HookResult.Ok {
+            quiesce_lane_submissions(start);
             abandon_lane_tasks<Tag>(start);
             return ServerError.None;
         }
@@ -150,6 +152,13 @@ fn executor_lane_loop<Tag, R, A, H, L, E>(start: LaneStart, driver: LifecycleDri
                         completion: task.work.completion,
                         ..
                     });
+            } else if !runtime_control_admit(start.control_epoch) {
+                deliver_lane_reply(start, LaneReply {
+                        key: task.work.key,
+                        outcome: ExecutionOutcome.Abandoned,
+                        completion: task.work.completion,
+                        ..
+                    });
             } else {
                 let reply = execute_lane_work(start, task.work, driver, hooks, H, L, E);
                 deliver_lane_reply(start, reply);
@@ -163,6 +172,18 @@ fn executor_lane_loop<Tag, R, A, H, L, E>(start: LaneStart, driver: LifecycleDri
         }
     }
     return ServerError.None;
+}
+
+// A permit acquired before gate closure may still be publishing its owned task.
+// No application callback runs here. Cancellation/poison allows coordinated reclamation after all joins.
+fn quiesce_lane_submissions(start: LaneStart) {
+    let fds: i32[1] = [-1];
+    let interests: i32[1] = [0];
+    var events: i32[1] = [0];
+    while runtime_control_submissions(start.control_epoch) > 0
+        && runtime_control_stage(start.control_epoch) == 1 {
+        silly_transport::poll(fds, interests, events, 1);
+    }
 }
 
 fn abandon_lane_tasks<Tag>(start: LaneStart) {

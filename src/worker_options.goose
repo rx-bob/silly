@@ -19,6 +19,9 @@ struct WorkerOptions {
     accepts_per_turn: i64 = 16,
     dispatches_per_turn: i64 = 16,
     idle_timeout_ms: i64 = 30000,
+    head_timeout_ms: i64 = 30000,
+    body_timeout_ms: i64 = 30000,
+    write_timeout_ms: i64 = 30000,
     poll_timeout_ms: i32 = 100,
     body_limits: BodyLimits = BodyLimits {
     },
@@ -28,6 +31,8 @@ struct WorkerOptions {
 }
 
 struct RuntimeOptions {
+    shutdown_timeout_ms: i64 = 5000,
+    signal_token: i64 = 0,
     workers: i64 = 1,
     accept_queue_max: i64 = 16,
     connections_max: i64 = 64,
@@ -48,6 +53,9 @@ fn worker_server_options(options: WorkerOptions) -> ServerOptions {
         accepts_per_turn: options.accepts_per_turn,
         dispatches_per_turn: options.dispatches_per_turn,
         idle_timeout_ms: options.idle_timeout_ms,
+        head_timeout_ms: options.head_timeout_ms,
+        body_timeout_ms: options.body_timeout_ms,
+        write_timeout_ms: options.write_timeout_ms,
         poll_timeout_ms: options.poll_timeout_ms,
         body_limits: options.body_limits,
         body_read_bytes_max: options.body_read_bytes_max,
@@ -66,6 +74,9 @@ fn worker_options(options: ServerOptions) -> WorkerOptions {
         accepts_per_turn: options.accepts_per_turn,
         dispatches_per_turn: options.dispatches_per_turn,
         idle_timeout_ms: options.idle_timeout_ms,
+        head_timeout_ms: options.head_timeout_ms,
+        body_timeout_ms: options.body_timeout_ms,
+        write_timeout_ms: options.write_timeout_ms,
         poll_timeout_ms: options.poll_timeout_ms,
         body_limits: options.body_limits,
         body_read_bytes_max: options.body_read_bytes_max,
@@ -87,7 +98,8 @@ fn runtime_connections_reserved(options: RuntimeOptions) -> i64 {
 }
 
 fn valid_runtime_options(options: RuntimeOptions) -> bool {
-    if options.workers <= 0 || options.workers > IO_WORKERS_MAX || options.accept_queue_max <= 0
+    if options.shutdown_timeout_ms < 0 || options.signal_token < 0 || options.workers <= 0
+        || options.workers > IO_WORKERS_MAX || options.accept_queue_max <= 0
         || options.connections_max <= 1 || options.buffer_bytes_max <= 0 {
         return false;
     }

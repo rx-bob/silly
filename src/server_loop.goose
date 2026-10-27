@@ -4,6 +4,7 @@ namespace silly;
 import std;
 
 import.connection;
+import.connection_deadlines;
 import.lifecycle_types;
 import.server_body;
 import.server_executor;
@@ -177,6 +178,7 @@ fn service_connections<D, H, E, O>(storage: ServerStorage&, options: ServerOptio
         if connection.phase == ConnectionPhase.Free {
             continue;
         }
+        sync_connection_phase(connection, now);
         let expired = connection_expired(connection, options, now);
         if !expired && storage.events[index + 2] == 0 && !input_pending(connection) {
             continue;
@@ -196,11 +198,13 @@ fn service_connection<D, H, E, O>(storage: ServerStorage&, options: ServerOption
     let connection .= storage.connections[index];
     connection.slot = index;
     if connection_expired(connection, options, now) {
+        connection.completion.timeout = connection_timeout(connection, options, now);
         request_timeout(connection, connection_buffers(storage, options, index), options, E);
         if connection.phase == ConnectionPhase.Free {
             finish_transfer(connection, driver, storage.hooks, TransferOutcome.Cancelled, O);
         }
         connection.active_ms = now;
+        sync_connection_phase(connection, now);
         return;
     }
     let buffers = connection_buffers(storage, options, index);
@@ -211,6 +215,7 @@ fn service_connection<D, H, E, O>(storage: ServerStorage&, options: ServerOption
         }
         return;
     }
+    let input_before = connection.input_bytes;
     let received_before = connection.received_bytes;
     let staged_before = connection.staged_read;
     let output_before = connection.head_sent + connection.body_sent;
@@ -229,6 +234,10 @@ fn service_connection<D, H, E, O>(storage: ServerStorage&, options: ServerOption
         || connection.phase != phase_before {
         connection.active_ms = now;
     }
+    if phase_before == ConnectionPhase.Reading && input_before == 0 && connection.input_bytes > 0 {
+        connection.phase_started_ms = now;
+    }
+    sync_connection_phase(connection, now);
 }
 
 fn input_pending(connection: Connection&) -> bool {
@@ -256,17 +265,7 @@ fn server_poll_deadline(storage: ServerStorage, options: ServerOptions, now: i64
         if input_pending(connection) || now < connection.active_ms {
             return 0;
         }
-        let elapsed = now - connection.active_ms;
-        if elapsed >= options.idle_timeout_ms {
-            return 0;
-        }
-        timeout = min(timeout, options.idle_timeout_ms - elapsed);
-        if connection.phase == ConnectionPhase.Executing {
-            if now >= connection.execution_deadline {
-                return 0;
-            }
-            timeout = min(timeout, connection.execution_deadline - now);
-        }
+        timeout = min(timeout, connection_wait_ms(connection, options, now));
     }
     return timeout as i32;
 }
@@ -288,6 +287,5 @@ fn connection_buffers(storage: ServerStorage, options: ServerOptions, index: i64
 }
 
 fn connection_expired(connection: Connection&, options: ServerOptions, now: i64) -> bool {
-    return now < connection.active_ms || now - connection.active_ms >= options.idle_timeout_ms
-        || (connection.phase == ConnectionPhase.Executing && now >= connection.execution_deadline);
+    return connection_timeout(connection, options, now) != TimeoutKind.None;
 }

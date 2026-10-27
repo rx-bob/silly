@@ -87,6 +87,7 @@ fn request_timeout<E>(connection: Connection&, buffers: ConnectionBuffers, optio
     if connection.phase == ConnectionPhase.Executing {
         connection.completion.execution = ExecutionOutcome.Deadline;
         request_error(connection, buffers, options, ResponseFailure {
+                timeout: connection.completion.timeout,
                 kind: ResponseFailureKind.Timeout,
                 status: 504,
                 ..
@@ -94,6 +95,7 @@ fn request_timeout<E>(connection: Connection&, buffers: ConnectionBuffers, optio
     } else if (connection.phase == ConnectionPhase.Reading && connection.input_bytes > 0)
         || connection.phase == ConnectionPhase.ReadingBody {
         request_error(connection, buffers, options, ResponseFailure {
+                timeout: connection.completion.timeout,
                 kind: ResponseFailureKind.Timeout,
                 status: 408,
                 ..

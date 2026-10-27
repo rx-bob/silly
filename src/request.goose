@@ -31,6 +31,7 @@ enum RequestBody {
 }
 
 struct Request {
+    listener_id: i64 = 0,
     method: const u8[:],
     target: const u8[:],
     headers: const HeaderView[:] = EMPTY_REQUEST_HEADERS,

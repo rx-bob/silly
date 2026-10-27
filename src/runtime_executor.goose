@@ -7,6 +7,7 @@ import.executor;
 import.executor_types;
 import.runtime;
 import.runtime_mailbox;
+import.runtime_monitor;
 import.server_options;
 import.transport;
 import.worker_message;
@@ -15,11 +16,18 @@ import.worker_options;
 // W and X are concrete application thread_fn entrypoints. The seed is copied into each owner.
 fn run_runtime_with_executor<C, W, X>(options: RuntimeOptions, listener: silly_transport::Descriptor,
     wake: silly_transport::Descriptor, seed: C) -> ServerResult {
+    var listeners: silly_transport::Descriptor[1] = [listener];
+    return run_runtime_listeners_with_executor(options, listeners, wake, seed, W, X);
+}
+
+fn run_runtime_listeners_with_executor<C, W, X>(options: RuntimeOptions,
+    listeners: silly_transport::Descriptor[:], wake: silly_transport::Descriptor, seed: C) -> ServerResult {
     fn spawn_lanes(settings: RuntimeOptions, workers: RuntimeWorker[:], lanes: RuntimeWorker[:],
-        report_wake: i32, config: C) {
+        report_wake: i32, config: C, epoch: i64) {
         let writers = runtime_owner_writers(workers);
         for lane in lanes.len {
-            lanes[lane].thread = thread_spawn(X, LaneStart {
+            lanes[lane].thread = thread_spawn_contained(X, LaneStart {
+                    control_epoch: epoch,
                     options: settings.executor,
                     server: settings.worker,
                     lane: lane,
@@ -28,9 +36,10 @@ fn run_runtime_with_executor<C, W, X>(options: RuntimeOptions, listener: silly_t
                     report_wake: report_wake,
                 }, config);
             lanes[lane].reader.fd = -1;
+            start_runtime_monitor(lanes[lane], true, lane, report_wake);
         }
     }
-    return run_runtime_entry(options, listener, wake, seed, true, W, spawn_lanes);
+    return run_runtime_entry(options, listeners, wake, seed, true, W, spawn_lanes);
 }
 
 fn runtime_owner_writers(owners: RuntimeWorker[:]) -> i32[4] {
@@ -57,22 +66,6 @@ fn close_runtime_owners(owners: RuntimeWorker[:]) {
     for &owner in owners {
         silly_transport::close(owner.reader);
         silly_transport::close(owner.writer);
-    }
-}
-
-fn stop_runtime_owners(workers: RuntimeWorker[:], lanes: RuntimeWorker[:]) {
-    for owner in workers.len {
-        route_worker_stop(owner, workers[owner].writer);
-    }
-    for owner in workers.len {
-        assert(thread_wait(workers[owner].thread));
-    }
-    // Quiesce every work producer before stopping consumers. Active foreign work must return.
-    for lane in lanes.len {
-        route_executor_stop(lane, lanes[lane].writer);
-    }
-    for lane in lanes.len {
-        assert(thread_wait(lanes[lane].thread));
     }
 }
 
@@ -108,25 +101,4 @@ fn executor_result(report: ExecutorReport) -> ServerResult {
         hook_failure: report.hook_failure,
         ..
     };
-}
-
-fn collect_runtime_results(result: ServerResult&) {
-    for index in 8 {
-        let report, present = qpoll<WorkerReport>();
-        if !present {
-            break;
-        }
-        if !report.ok && result.ok {
-            result = worker_result(report);
-        }
-    }
-    for index in 8 {
-        let report, present = qpoll<ExecutorReport>();
-        if !present {
-            break;
-        }
-        if !report.ok && result.ok {
-            result = executor_result(report);
-        }
-    }
 }

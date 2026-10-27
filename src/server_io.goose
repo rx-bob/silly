@@ -223,7 +223,7 @@ fn write_connection_observed<D, O>(connection: Connection&, head: u8[:], body: u
             connection.head_sent = 0;
         } else {
             finish_transfer(connection, driver, hooks, TransferOutcome.Delivered, O);
-            if connection.close_after_reply {
+            if connection.close_after_reply || connection.draining {
                 release_connection(connection);
             } else {
                 reset_connection(connection);

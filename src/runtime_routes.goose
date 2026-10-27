@@ -79,7 +79,9 @@ fn runtime_local_routes<Tag, R, A, D, H, L, E>(options: ServerOptions,
     var driver = LifecycleDriver<R, A> {
         plan: plan,
         app: app,
+        control_epoch: start.control_epoch,
         executor: ExecutorOwner {
+            control_epoch: start.control_epoch,
             options: start.executor,
             owner: start.owner,
             lane_writers: start.lane_writers,

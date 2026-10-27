@@ -8,6 +8,7 @@ import.executor_types;
 import.lifecycle_driver;
 import.route_driver;
 import.route_types;
+import.runtime_control;
 import.server_buffers;
 import.server_executor;
 import.server_loop;
@@ -82,12 +83,25 @@ fn apply_executor_reply<Tag, E>(storage: ServerStorage&, options: ServerOptions,
     }
     connection.completion = reply.completion;
     connection.completion.execution = outcome;
+    if outcome == ExecutionOutcome.Deadline {
+        connection.completion.timeout = TimeoutKind.Execution;
+    }
+    if outcome == ExecutionOutcome.Abandoned && owner.control_epoch > 0
+        && runtime_control_stage(owner.control_epoch) != 0 {
+        release_connection(connection);
+        return true;
+    }
     // A lane-rendered size error is already serialized; do not invoke its error renderer again on I/O.
     let rendered_error = outcome == ExecutionOutcome.OutputLimit && reply.outcome == outcome
         && reply.head.len > 0 && fits && now < connection.execution_deadline;
     if outcome != ExecutionOutcome.Completed && !rendered_error {
         request_error(connection, buffers, options, ResponseFailure {
-                kind: ResponseFailureKind.Admission,
+                timeout: connection.completion.timeout,
+                kind: if outcome == ExecutionOutcome.Deadline {
+                    ResponseFailureKind.Timeout
+                } else {
+                    ResponseFailureKind.Admission
+                },
                 status: execution_status(outcome),
                 ..
             }, E);

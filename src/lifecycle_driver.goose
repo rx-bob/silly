@@ -8,6 +8,7 @@ import.route_types;
 struct LifecycleDriver<R, A> {
     plan: RoutePlan<R>,
     app: A&,
+    control_epoch: i64 = 0,
     executor: ExecutorOwner = ExecutorOwner {
     },
     owner: Owner = Owner {

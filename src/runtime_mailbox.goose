@@ -21,17 +21,17 @@ fn initialize_runtime_mailboxes(capacity: i64) {
 }
 
 fn route_accept(owner: i64, wake: silly_transport::Descriptor,
-    socket: silly_transport::Descriptor&) -> PublishResult {
+    socket: silly_transport::Descriptor&, listener_id: i64 = 0) -> PublishResult {
     if owner == 0 {
-        return publish_accept<IoOwner0>(wake, socket);
+        return publish_accept<IoOwner0>(wake, socket, listener_id);
     }
     if owner == 1 {
-        return publish_accept<IoOwner1>(wake, socket);
+        return publish_accept<IoOwner1>(wake, socket, listener_id);
     }
     if owner == 2 {
-        return publish_accept<IoOwner2>(wake, socket);
+        return publish_accept<IoOwner2>(wake, socket, listener_id);
     }
-    return publish_accept<IoOwner3>(wake, socket);
+    return publish_accept<IoOwner3>(wake, socket, listener_id);
 }
 
 fn stop_worker<Tag>(wake: silly_transport::Descriptor) {

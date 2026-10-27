@@ -9,6 +9,7 @@ import.executor_types;
 import.lifecycle_driver;
 import.route_driver;
 import.route_types;
+import.runtime_control;
 import.server_body;
 import.state;
 import.transport;
@@ -50,6 +51,7 @@ fn queue_execution<R, A>(driver: LifecycleDriver<R, A> & , connection: Connectio
     }
     connection.execution_deadline = clock.count + executor.options.task_timeout_ms;
     let work = ExecWork {
+        listener_id: connection.listener_id,
         key: TransferKey {
             owner: executor.owner,
             slot: connection.slot,
@@ -98,4 +100,37 @@ fn read_executing(connection: Connection&, staging: u8[:], events: i32, budget: 
         connection.completion.system_error = result.error;
         release_connection(connection);
     }
+}
+
+fn driver_control_epoch(driver: NoState&) -> i64 {
+    return 0;
+}
+
+fn driver_control_epoch<R>(driver: RoutePlan<R>&) -> i64 {
+    return 0;
+}
+
+fn driver_control_epoch<R, A>(driver: RouteDriver<R, A> & ) -> i64 {
+    return 0;
+}
+
+fn driver_control_epoch<R, A>(driver: LifecycleDriver<R, A> & ) -> i64 {
+    return driver.control_epoch;
+}
+
+fn permit_inline(driver: NoState&) -> bool {
+    return true;
+}
+
+fn permit_inline<R>(driver: RoutePlan<R>&) -> bool {
+    return true;
+}
+
+fn permit_inline<R, A>(driver: RouteDriver<R, A> & ) -> bool {
+    return true;
+}
+
+fn permit_inline<R, A>(driver: LifecycleDriver<R, A> & ) -> bool {
+    // A lane acquired its admission permit before reconstructing the endpoint frame.
+    return driver.owner.lane >= 0 || runtime_control_admit(driver.control_epoch);
 }

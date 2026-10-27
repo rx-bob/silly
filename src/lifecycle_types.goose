@@ -4,6 +4,7 @@ namespace silly;
 import.context;
 import.execution_types;
 import.response;
+import.timeout_types;
 
 struct Owner {
     id: i64 = 0,
@@ -22,6 +23,7 @@ enum HookResult {
         message: u8[..128]
     },
 }
+
 enum TransferOutcome {
     Pending,
     Delivered,
@@ -42,6 +44,7 @@ struct AuditRecord {
     response_truncated: bool = false,
 }
 struct CompletionData {
+    timeout: TimeoutKind = TimeoutKind.None,
     execution: ExecutionOutcome = ExecutionOutcome.None,
     route_id: i64 = -1,
     selection: CompletionSelection = CompletionSelection.Unavailable,

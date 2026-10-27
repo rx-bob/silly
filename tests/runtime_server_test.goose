@@ -130,11 +130,15 @@ thread_fn serve(listener: i32, wake: i32, seed: i64, workers: i64) {
             ..
         },
     };
-    let result = silly::run_runtime(options, silly_transport::Descriptor {
+    var result = silly::run_runtime(options, silly_transport::Descriptor {
             fd: listener
         }, silly_transport::Descriptor {
             fd: wake
         }, seed, worker);
+    if result.drain == silly::DrainStatus.Incomplete {
+        var pending = result.pending;
+        result = silly::resume_shutdown(pending, 10000);
+    }
     assert(qput(RuntimeFinished {
             ok: result.ok,
             error: result.error
@@ -271,8 +275,8 @@ fn singleton_refusal() {
     listener.descriptor.fd = -1;
     wake.reader.fd = -1;
     assert(!result.ok);
-    assert(result.error == silly::ServerError.InvalidOptions);
-    assert(result.message == "an io runtime is already active");
+    assert(result.error == silly::ServerError.ShutdownBusy);
+    assert(result.message == "runtime ownership is retained or poisoned");
     silly_transport::close(wake.writer);
 }
 
