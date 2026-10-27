@@ -11,6 +11,7 @@ import.headers;
 import.http_head_types;
 import.http_headers;
 import.http_parser;
+import.route_driver;
 import.route_match;
 import.route_types;
 import.server_options;
@@ -73,6 +74,10 @@ fn body_admission<R>(driver: RoutePlan<R>&, parsed: ParsedHead, cap: i64) -> Bod
         },
         ..
     };
+}
+
+fn body_admission<R, A>(driver: RouteDriver<R, A> & , parsed: ParsedHead, cap: i64) -> BodyAdmission {
+    return body_admission(driver.plan, parsed, cap);
 }
 
 // Unknown expectation tokens fail; repeated 100-continue tokens are semantically identical.

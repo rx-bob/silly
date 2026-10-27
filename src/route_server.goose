@@ -3,11 +3,13 @@ namespace silly;
 
 import std;
 
+import.endpoint;
 import.response_errors;
 import.route_captures;
 import.route_match;
 import.route_plan;
 import.route_policy;
+import.route_state_server;
 import.route_types;
 import.router;
 import.server;
@@ -61,41 +63,9 @@ fn serve_prepared<R, H>(options: ServerOptions, plan: RoutePlan<R>) -> ServerRes
 }
 
 fn serve_prepared_with_errors<R, H, E>(options: ServerOptions, plan: RoutePlan<R>) -> ServerResult {
-    if !valid_server_options(options) {
-        return ServerResult {
-            ok: false,
-            error: ServerError.InvalidOptions,
-            message: "invalid server options",
-            ..
-        };
-    }
-    if plan.issue.error != RouteError.None {
-        return route_failure(plan.issue);
-    }
-    var listener = silly_transport::listen(options.address, options.port, 128);
-    if listener.status != silly_transport::IoStatus.Ready {
-        return ServerResult {
-            ok: false,
-            error: ServerError.Listen,
-            message: "listen failed",
-            system_error: listener.error,
-            ..
-        };
-    }
-    var wake = silly_transport::wake_pair();
-    if wake.status != silly_transport::IoStatus.Ready {
-        silly_transport::close(listener.descriptor);
-        return ServerResult {
-            ok: false,
-            error: ServerError.Wake,
-            message: "wake failed",
-            system_error: wake.error,
-            ..
-        };
-    }
-    let result = run_prepared_server_with_errors(options, listener.descriptor, wake.reader, plan, H, E);
-    silly_transport::close(wake.writer);
-    return result;
+    var app = NoState {
+    };
+    return serve_prepared_with_cleanup_and_errors(options, plan, app, H, endpoint_cleanup, E);
 }
 
 // Like run_server, consumes listener and wake; the caller retains immutable plan owners.
@@ -106,47 +76,42 @@ fn run_prepared_server<R, H>(options: ServerOptions, listener: silly_transport::
 
 fn run_prepared_server_with_errors<R, H, E>(options: ServerOptions, listener: silly_transport::Descriptor,
     wake: silly_transport::Descriptor, plan: RoutePlan<R>) -> ServerResult {
-    var driver = plan;
-    if plan.issue.error != RouteError.None {
-        var owned_listener = listener;
-        var owned_wake = wake;
-        silly_transport::close(owned_listener);
-        if listener.fd != wake.fd {
-            silly_transport::close(owned_wake);
-        }
-        return route_failure(plan.issue);
-    }
-    return run_server_state_with_errors(options, listener, wake, driver, E) {
-        routes,
-        ctx => dispatch_route(routes, ctx, H)
+    var app = NoState {
     };
+    return run_prepared_server_with_cleanup_and_errors(options, listener, wake, plan, app,
+        H, endpoint_cleanup, E);
 }
 
-fn dispatch_route<R, H>(plan: RoutePlan<R>&, ctx: BufferedContext&) {
+fn dispatch_route<R, A, S, H>(plan: RoutePlan<R>&, ctx: Context<A, S> & ) {
+    dispatch_route_with_cleanup(plan, ctx, H, endpoint_cleanup);
+}
+
+fn dispatch_route_with_cleanup<R, A, S, H, C>(plan: RoutePlan<R>&, ctx: Context<A, S> & ) {
     let selected = match_route(plan, ctx.request.method, ctx.request.target);
     if selected.result == RouteMatchResult.Matched {
-        var routed = BufferedContext {
+        var routed = Context<A, S> {
             request: ctx.request,
             response: ctx.response,
             app: ctx.app,
+            stream_start: ctx.stream_start,
             route_captures: route_captures(plan, selected.route_id, ctx.request.target),
             ..
         };
-        H(routed, plan.entries[selected.route_id].action);
+        coordinate_endpoint(routed, plan.entries[selected.route_id].action, H, C);
     } else if selected.result == RouteMatchResult.GeneratedOptions
         || selected.result == RouteMatchResult.MethodNotAllowed {
         route_method_reply(plan, ctx, selected.result);
     } else if selected.result == RouteMatchResult.NotFound {
-        empty_reply(ctx, 404);
+        route_empty_reply(ctx, 404);
     } else if selected.result == RouteMatchResult.PathLimit {
-        empty_reply(ctx, 414);
+        route_empty_reply(ctx, 414);
     } else {
-        empty_reply(ctx, 400);
+        route_empty_reply(ctx, 400);
     }
 }
 
 // Generated method responses use the ordinary bounded response builder and error renderer.
-fn route_method_reply<R>(plan: RoutePlan<R>, ctx: BufferedContext&, result: RouteMatchResult) {
+fn route_method_reply<R, A, S>(plan: RoutePlan<R>, ctx: Context<A, S> & , result: RouteMatchResult) {
     var allow: u8[>..] = [];
     let error = route_allow(allow, plan, ctx.request.target, ctx.response.limits.header_bytes_max);
     if error != ResponseError.None {
@@ -165,4 +130,10 @@ fn route_method_reply<R>(plan: RoutePlan<R>, ctx: BufferedContext&, result: Rout
         return;
     }
     prepare_response(ctx.response);
+}
+
+fn route_empty_reply<A, S>(ctx: Context<A, S> & , status: i32) {
+    if begin_response(ctx.response, status) == ResponseError.None {
+        prepare_response(ctx.response);
+    }
 }
