@@ -43,7 +43,7 @@ fn default_response_error(response: Response&, failure: ResponseFailure) {
     }
 }
 
-fn response_failure(response: Response&) -> ResponseFailure {
+fn response_failure(response: Response&, allow_stream: bool = false) -> ResponseFailure {
     var failure = ResponseFailure {
     };
     if response.phase == ResponsePhase.Empty || response.phase == ResponsePhase.Preparing {
@@ -56,8 +56,8 @@ fn response_failure(response: Response&) -> ResponseFailure {
         } else {
             response.error
         };
-    } else if response.mode != ResponseBodyMode.Buffered {
-        // Application stream scheduling is separate from the E2 wire-framing primitives.
+    } else if response.mode != ResponseBodyMode.Buffered && !allow_stream {
+        // Only an owner with producer scheduling may accept a selected stream.
         failure.kind = ResponseFailureKind.Serialization;
         failure.error = ResponseError.InvalidState;
     }

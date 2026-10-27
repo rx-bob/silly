@@ -1,4 +1,4 @@
-// Compiler-proven synchronous step vocabulary; scheduling and HTTP streaming follow in E7.
+// Static producer callbacks borrow input and bounded output only for one step.
 namespace silly;
 
 enum StreamError {
@@ -51,6 +51,7 @@ struct ChunkWriter {
 // A driver-local sink. S must be fixed, owned state; the compiler rejects escaping local roots.
 struct StreamStart<S> {
     selected: bool = false,
+    pending_bytes_max: i64 = 4096,
     state: S = default<S>(),
 }
 

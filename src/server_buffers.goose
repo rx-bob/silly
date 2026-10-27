@@ -24,6 +24,7 @@ import.server_observer;
 import.server_options;
 import.server_request_errors;
 import.state;
+import.stream_stage;
 
 type BufferedContext = Context<NoState, NoStream>;
 
@@ -123,7 +124,7 @@ fn application_reply<D, H, O>(connection: Connection&, buffers: ConnectionBuffer
         return ResponseFailure {
         };
     }
-    let failure = response_failure(response);
+    let failure = response_failure(response, driver_streaming(driver));
     if failure.error != ResponseError.None {
         return failure;
     }
@@ -135,7 +136,8 @@ fn application_reply<D, H, O>(connection: Connection&, buffers: ConnectionBuffer
             ..
         };
     }
-    let error = stage_reply(connection, buffers, response, wire_options, options.response_head_bytes_max);
+    let error = stage_application_reply(driver, connection, buffers, response, wire_options,
+        options.response_head_bytes_max);
     return ResponseFailure {
         kind: if error == ResponseError.None {
             ResponseFailureKind.None
@@ -179,6 +181,9 @@ fn render_reply<E>(connection: Connection&, buffers: ConnectionBuffers, options:
 fn stage_reply(connection: Connection&, buffers: ConnectionBuffers, response: Response&,
     wire_options: ResponseWireOptions, cap: i64) -> ResponseError {
     var wire: u8[>..] = [];
+    if response.mode != ResponseBodyMode.Buffered {
+        return ResponseError.InvalidState;
+    }
     if response.output.len > buffers.body.len {
         return ResponseError.OutputLimit;
     }

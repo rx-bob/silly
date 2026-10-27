@@ -50,3 +50,8 @@ E4.S1 adds `header_value_reset_rejected.goose` and
 `header_index_reset_rejected.goose` (`cannot clear index`). Each uses the retained value
 or cursor after the attempted reset. `indexed_header_test.goose` exercises legal reset
 after final use and fresh parsing with the reused byte owner.
+
+E7.S1 adds `producer_input_escape_rejected.goose` (diagnostic `which does not
+outlive the destination`) and `public_stream_resizable_rejected.goose` (diagnostic
+`default<T>() needs a fixed-size type`). These reject retaining step-local input in
+producer state and bypassing fixed-state checks through an explicitly initialized sink.

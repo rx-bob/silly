@@ -21,6 +21,7 @@ enum ResumeResult {
     Pending,
     Terminal,
     Invalid,
+    Waiting,
 }
 
 struct Continuation<S> {
@@ -30,6 +31,7 @@ struct Continuation<S> {
     wake: Wake = Wake.Ready,
     error: StreamError = StreamError.InvalidStep,
     flush: bool = false,
+    chunk_capacity: i64 = CONTINUATION_CHUNK_BYTES,
     produced: i64 = 0,
     acknowledged: i64 = 0,
     terminal_count: i64 = 0,
@@ -59,8 +61,13 @@ fn resume<S, F>(slot: Continuation<S>&, key: TransferKey, event: StreamEvent) ->
     if slot.phase == ContinuationPhase.Pending {
         return ResumeResult.Pending;
     }
+    if slot.chunk_capacity <= 0 || slot.chunk_capacity > CONTINUATION_CHUNK_BYTES {
+        let result = fail_continuation(slot);
+        notify_cancelled(slot, F);
+        return result;
+    }
     var writer = ChunkWriter {
-        bytes: slot.chunk,
+        bytes: slot.chunk[..slot.chunk_capacity],
         ..
     };
     let step = F(slot.state, event, writer);
@@ -74,7 +81,7 @@ fn resume<S, F>(slot: Continuation<S>&, key: TransferKey, event: StreamEvent) ->
 fn apply_step<S>(slot: Continuation<S>&, step: StreamStep, produced: i64) -> ResumeResult {
     match step {
         Chunk chunk => {
-            if produced <= 0 || produced > CONTINUATION_CHUNK_BYTES || !valid_wake(chunk.next) {
+            if produced <= 0 || produced > slot.chunk_capacity || !valid_wake(chunk.next) {
                 return fail_continuation(slot);
             }
             slot.produced = produced;

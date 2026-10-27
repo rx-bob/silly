@@ -1,0 +1,107 @@
+// Header serialization precedes commitment. The scheduler decides when wire output starts.
+namespace silly;
+
+import std;
+
+import.connection;
+import.continuation;
+import.http_writer;
+import.lifecycle_driver;
+import.response;
+import.response_wire_types;
+import.route_driver;
+import.route_types;
+import.server_body;
+import.server_buffers;
+import.state;
+import.stream;
+import.stream_driver;
+import.transfer_key;
+
+fn stage_application_reply(driver: NoState&, connection: Connection&, buffers: ConnectionBuffers,
+    response: Response&, wire_options: ResponseWireOptions, cap: i64) -> ResponseError {
+    return stage_reply(connection, buffers, response, wire_options, cap);
+}
+
+fn stage_application_reply<R>(driver: RoutePlan<R>&, connection: Connection&, buffers: ConnectionBuffers,
+    response: Response&, wire_options: ResponseWireOptions, cap: i64) -> ResponseError {
+    return stage_reply(connection, buffers, response, wire_options, cap);
+}
+
+fn stage_application_reply<R, A>(driver: RouteDriver<R, A> & , connection: Connection&, buffers: ConnectionBuffers,
+    response: Response&, wire_options: ResponseWireOptions, cap: i64) -> ResponseError {
+    return stage_reply(connection, buffers, response, wire_options, cap);
+}
+
+fn stage_application_reply<R, A>(driver: LifecycleDriver<R, A> & , connection: Connection&, buffers: ConnectionBuffers,
+    response: Response&, wire_options: ResponseWireOptions, cap: i64) -> ResponseError {
+    return stage_reply(connection, buffers, response, wire_options, cap);
+}
+
+fn stage_application_reply<R, A, S>(driver: StreamDriver<R, A, S> & , connection: Connection&,
+    buffers: ConnectionBuffers, response: Response&, wire_options: ResponseWireOptions, cap: i64) -> ResponseError {
+    let slot .= driver.slots[driver.current];
+    if response.mode == ResponseBodyMode.Stream && !slot.start.selected {
+        return ResponseError.InvalidState;
+    }
+    if response.mode != ResponseBodyMode.Stream {
+        return stage_reply(connection, buffers, response, wire_options, cap);
+    }
+    var wire: u8[>..] = [];
+    let plan = prepare_response_head(wire, response, wire_options, min(cap, buffers.head.len));
+    if plan.error != ResponseError.None {
+        return plan.error;
+    }
+    copy_server_bytes(buffers.head, wire);
+    slot.producer = StreamProducer<S> {
+        continuation: Continuation<S> {
+            key: TransferKey {
+                owner: 0,
+                slot: connection.slot,
+                connection_generation: connection.generation,
+                request_generation: connection.request_generation,
+            },
+            state: slot.start.state,
+            ..
+        },
+        limits: StreamLimits {
+            pending_bytes_max: slot.start.pending_bytes_max
+        },
+        ..
+    };
+    slot.start.selected = false;
+    slot.active = true;
+    slot.framing = plan.framing;
+    slot.cursor = WireCursor {
+    };
+    slot.prefix.clear();
+    slot.chunk_started = false;
+    slot.ending = false;
+    connection.close_after_reply = plan.close;
+    connection.head_bytes = wire.len;
+    connection.body_bytes = 0;
+    connection.head_sent = 0;
+    connection.body_sent = 0;
+    connection.phase = ConnectionPhase.Writing;
+    return ResponseError.None;
+}
+
+fn driver_streaming(driver: NoState&) -> bool {
+    return false;
+}
+
+fn driver_streaming<R>(driver: RoutePlan<R>&) -> bool {
+    return false;
+}
+
+fn driver_streaming<R, A>(driver: RouteDriver<R, A> & ) -> bool {
+    return false;
+}
+
+fn driver_streaming<R, A>(driver: LifecycleDriver<R, A> & ) -> bool {
+    return false;
+}
+
+fn driver_streaming<R, A, S>(driver: StreamDriver<R, A, S> & ) -> bool {
+    return true;
+}
