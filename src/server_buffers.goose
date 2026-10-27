@@ -69,8 +69,12 @@ fn build_reply<D, H, E, O>(connection: Connection&, buffers: ConnectionBuffers, 
         headers: fields,
         header_index: index,
         body_framing: parsed.framing,
-        body_state: RequestBody.Buffered {
-            bytes: buffers.request[..connection.request_bytes]
+        body_state: if connection.streamed_input {
+            RequestBody.Streamed
+        } else {
+            RequestBody.Buffered {
+                bytes: buffers.request[..connection.request_bytes]
+            }
         },
         ..
     };

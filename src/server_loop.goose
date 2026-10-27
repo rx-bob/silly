@@ -241,8 +241,9 @@ fn service_connection<D, H, E, O>(storage: ServerStorage&, options: ServerOption
 }
 
 fn input_pending(connection: Connection&) -> bool {
-    return (connection.phase == ConnectionPhase.Reading || connection.phase == ConnectionPhase.ReadingBody)
-        && connection.staged_read < connection.staged_bytes;
+    return connection.stream_dispatch_pending && connection.phase == ConnectionPhase.ReadingBody
+        || ((connection.phase == ConnectionPhase.Reading || connection.phase == ConnectionPhase.ReadingBody)
+        && connection.staged_read < connection.staged_bytes);
 }
 
 fn server_poll_timeout(storage: ServerStorage, options: ServerOptions) -> i32 {

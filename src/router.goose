@@ -47,7 +47,9 @@ fn route_registration_ready<R>(router: Router<R>&, method: u8[:], path: u8[:], o
         route_fail(router, RouteError.InvalidLimits);
     } else if method.len > router.limits.method_bytes_max || (method.len != 0 && !valid_header_name(method)) {
         route_fail(router, RouteError.InvalidMethod);
-    } else if options.body != BodyMode.Buffered || options.body_bytes_max < - 1
+    } else if options.body_bytes_max < - 1
+        || (options.body == BodyMode.Streamed
+        && inherited_execution(router.current_execution, options.execution) != ExecutionClass.Inline)
         || !valid_execution_class(inherited_execution(router.current_execution, options.execution))
         || inherited_execution(router.current_execution, options.execution) == ExecutionClass.Inherit {
         route_fail(router, RouteError.UnsupportedOptions);

@@ -1,6 +1,9 @@
 // Timer/input waiting uses idle activity; only offered output uses write inactivity.
 namespace silly;
 
+import std;
+
+import.body_types;
 import.connection;
 import.connection_deadlines;
 import.server_options;
@@ -20,11 +23,19 @@ fn stream_deadline<S>(slot: StreamSlot<S>&, connection: Connection&,
     } else {
         options.idle_timeout_ms
     };
-    return timeout_remaining(now, connection.active_ms, budget);
+    let activity = timeout_remaining(now, connection.active_ms, budget);
+    if slot.input_enabled && slot.input_started_ms >= 0 && connection.reader.status != BodyStatus.Complete {
+        return min(activity, timeout_remaining(now, slot.input_started_ms, options.body_timeout_ms));
+    }
+    return activity;
 }
 
 fn stream_timeout<S>(slot: StreamSlot<S>&, connection: Connection&,
     options: ServerOptions, now: i64) -> TimeoutKind {
+    if slot.input_enabled && slot.input_started_ms >= 0 && connection.reader.status != BodyStatus.Complete
+        && timeout_elapsed(now, slot.input_started_ms, options.body_timeout_ms) {
+        return TimeoutKind.Body;
+    }
     if stream_deadline(slot, connection, options, now) > 0 {
         return TimeoutKind.None;
     }

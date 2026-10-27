@@ -29,6 +29,7 @@ struct ConnectionBuffers {
     hooks: HookState&,
 }
 struct BodyAdmission {
+    streamed: bool = false,
     execution_lane: i64 = -1,
     complete_response: bool = false,
     status: i32 = 0,
@@ -81,6 +82,7 @@ fn body_admission<R>(driver: RoutePlan<R>&, parsed: ParsedHead, cap: i64) -> Bod
     let route_cap = driver.entries[selected.route_id].options.body_bytes_max;
     let execution = driver.entries[selected.route_id].options.execution;
     return BodyAdmission {
+        streamed: driver.entries[selected.route_id].options.body == BodyMode.Streamed,
         execution_lane: match execution {
             Inherit => -1,
             Inline => -1,

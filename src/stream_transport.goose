@@ -3,6 +3,7 @@ namespace silly;
 
 import std;
 
+import.body_types;
 import.chunk_writer;
 import.connection;
 import.continuation;
@@ -18,6 +19,7 @@ import.stream;
 import.stream_contract;
 import.stream_deadlines;
 import.stream_driver;
+import.stream_input;
 import.timeout_types;
 import.transfer_key;
 import.transport;
@@ -46,6 +48,9 @@ fn cancel_stream_slot<S, F>(slot: StreamSlot<S>&) {
 
 fn finish_stream_connection<R, A, S, F, O>(driver: StreamDriver<R, A, S> & ,
     connection: Connection&, hooks: HookState&, outcome: TransferOutcome) {
+    if connection.streamed_input && connection.reader.status != BodyStatus.Complete {
+        connection.close_after_reply = true;
+    }
     cancel_stream_slot(driver.slots[driver.current], F);
     finish_transfer(connection, driver, hooks, outcome, O);
     if outcome != TransferOutcome.Delivered || connection.close_after_reply || connection.draining {
@@ -117,8 +122,16 @@ fn service_stream<R, A, S, F, O>(driver: StreamDriver<R, A, S> & , connection: C
     let slot .= driver.slots[driver.current];
     let producer .= slot.producer;
     let expired = stream_timeout(slot, connection, options, now);
-    if expired != TimeoutKind.None || (events & (silly_transport::CLOSED | silly_transport::ERROR)) != 0 {
+    if expired != TimeoutKind.None {
         connection.completion.timeout = expired;
+        if slot.input_enabled && !slot.input_ended && !producer.committed {
+            fail_stream_input(slot, connection, now, F);
+        } else {
+            finish_stream_connection(driver, connection, buffers.hooks, TransferOutcome.Cancelled, F, O);
+            return;
+        }
+    }
+    if (events & (silly_transport::CLOSED | silly_transport::ERROR)) != 0 {
         finish_stream_connection(driver, connection, buffers.hooks, TransferOutcome.Cancelled, F, O);
         return;
     }
@@ -172,20 +185,32 @@ fn advance_stream_producer<S, F>(slot: StreamSlot<S>&, now: i64) {
         stream_cancel(producer, producer.continuation.key, F);
         producer.close_required = false;
         producer.commit_requested = true;
-    } else if !slot.ending && stream_pending_bytes(producer) == 0 && !terminal(producer.continuation) {
+    } else if !slot.input_stepped && !slot.ending && stream_pending_bytes(producer) == 0
+        && !terminal(producer.continuation) {
         stream_resume(producer, producer.continuation.key, StreamEvent.Ready, now, F);
     }
 }
 
 fn render_stream_failure(connection: Connection&, buffers: ConnectionBuffers, options: ServerOptions) {
+    var failure = ResponseFailure {
+        kind: ResponseFailureKind.HandlerFailure,
+        error: ResponseError.Application,
+        ..
+    };
+    if connection.completion.timeout != TimeoutKind.None {
+        failure.kind = ResponseFailureKind.Timeout;
+        failure.status = 408;
+        failure.timeout = connection.completion.timeout;
+    } else if connection.streamed_input && body_terminal(connection.reader.status)
+        && connection.reader.status != BodyStatus.Complete {
+        failure.kind = ResponseFailureKind.RequestBody;
+        failure.status = body_status_code(connection.reader.status);
+        failure.body_error = connection.reader.status;
+    }
     render_reply(connection, buffers, options, ResponseWireOptions {
             http_minor: connection.http_minor,
             request_method: connection.completion.method,
             close: true,
             ..
-        }, ResponseFailure {
-            kind: ResponseFailureKind.HandlerFailure,
-            error: ResponseError.Application,
-            ..
-        }, default_response_error);
+        }, failure, default_response_error);
 }

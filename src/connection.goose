@@ -33,6 +33,8 @@ struct Connection {
     },
     input_bytes: i64 = 0,
     request_bytes: i64 = 0,
+    streamed_input: bool = false,
+    stream_dispatch_pending: bool = false,
     staged_bytes: i64 = 0,
     staged_read: i64 = 0,
     received_bytes: i64 = 0,

@@ -22,6 +22,7 @@ import.server_options;
 import.server_policy;
 import.server_request_errors;
 import.state;
+import.stream_stage;
 import.transport;
 import.wire_transfer;
 
@@ -103,8 +104,12 @@ fn begin_request_body<D, H, E, O>(connection: Connection&, buffers: ConnectionBu
     connection.http_minor = parsed.http_minor;
     connection.close_after_reply = !request_persistent(fields, parsed.http_minor);
     connection.response_policy = resolve_response_policy(driver, parsed, fields);
-    let cap = min(options.limits.body_bytes_max, options.body_limits.bytes_max);
-    let admission = body_admission(driver, parsed, cap);
+    var admission = body_admission(driver, parsed, options.body_limits.bytes_max);
+    if !admission.streamed {
+        admission.cap = min(admission.cap, options.limits.body_bytes_max);
+    } else if !driver_streaming(driver) {
+        admission.status = 501;
+    }
     connection.execution_lane = admission.execution_lane;
     connection.completion.route_id = admission.route_id;
     connection.completion.selection = admission.selection;
@@ -154,6 +159,8 @@ fn continue_request_body<D, H, E, O>(connection: Connection&, buffers: Connectio
         }
         return;
     }
+    connection.streamed_input = admission.streamed;
+    connection.stream_dispatch_pending = admission.streamed;
     connection.phase = ConnectionPhase.ReadingBody;
     if expectation == 100 && parsed.http_minor == 1 && connection.reader.status != BodyStatus.Complete {
         var interim: u8[>..] = [];
@@ -168,11 +175,19 @@ fn continue_request_body<D, H, E, O>(connection: Connection&, buffers: Connectio
         connection.head_sent = 0;
         connection.body_bytes = 0;
         connection.phase = ConnectionPhase.Continue;
+    } else if admission.streamed {
+        connection.stream_dispatch_pending = false;
+        build_reply(connection, buffers, options, driver, H, E, O);
     }
 }
 
 fn read_request_body<D, H, E, O>(connection: Connection&, buffers: ConnectionBuffers,
     options: ServerOptions, driver: D&) {
+    if connection.stream_dispatch_pending {
+        connection.stream_dispatch_pending = false;
+        build_reply(connection, buffers, options, driver, H, E, O);
+        return;
+    }
     if read_staging(connection, buffers, options, E) {
         consume_request_body(connection, buffers, options, driver, H, E, O);
     }

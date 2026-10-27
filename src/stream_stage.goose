@@ -3,6 +3,7 @@ namespace silly;
 
 import std;
 
+import.body_types;
 import.connection;
 import.continuation;
 import.http_writer;
@@ -45,10 +46,20 @@ fn stage_application_reply<R, A, S>(driver: StreamDriver<R, A, S> & , connection
         return ResponseError.InvalidState;
     }
     if response.mode != ResponseBodyMode.Stream {
-        return stage_reply(connection, buffers, response, wire_options, cap);
+        var buffered_wire = wire_options;
+        if connection.streamed_input && connection.reader.status != BodyStatus.Complete {
+            buffered_wire.close = true;
+        }
+        return stage_reply(connection, buffers, response, buffered_wire, cap);
     }
     var wire: u8[>..] = [];
-    let plan = prepare_response_head(wire, response, wire_options, min(cap, buffers.head.len));
+    var stream_wire = wire_options;
+    if connection.streamed_input && connection.reader.status != BodyStatus.Complete
+        && (!slot.start.input || wire_options.request_method == "HEAD" || response.status == 204
+        || response.status == 205 || response.status == 304) {
+        stream_wire.close = true;
+    }
+    let plan = prepare_response_head(wire, response, stream_wire, min(cap, buffers.head.len));
     if plan.error != ResponseError.None {
         return plan.error;
     }
@@ -69,6 +80,11 @@ fn stage_application_reply<R, A, S>(driver: StreamDriver<R, A, S> & , connection
         },
         ..
     };
+    slot.input_enabled = slot.start.input;
+    slot.input_ended = false;
+    slot.input_failed = false;
+    slot.input_eof = false;
+    slot.input_started_ms = -1;
     slot.start.selected = false;
     slot.active = true;
     slot.framing = plan.framing;

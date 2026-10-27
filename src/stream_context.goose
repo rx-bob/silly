@@ -3,6 +3,7 @@ namespace silly;
 
 import.context;
 import.continuation;
+import.request;
 import.response;
 import.stream;
 import.stream_contract;
@@ -40,4 +41,19 @@ fn stream<A, S>(ctx: Context<A, S> & , status: i32, state: S,
     sink.selected = true;
     ctx.response.mode = ResponseBodyMode.Stream;
     return prepare_response(ctx.response);
+}
+
+// A streamed route lends input only to the producer, never to the handler body view.
+fn stream_input<A, S>(ctx: Context<A, S> & , status: i32, state: S,
+    options: StreamOptions = StreamOptions {
+    }) -> ResponseError {
+    if ctx.request.body_state != RequestBody.Streamed {
+        return ResponseError.InvalidState;
+    }
+    let result = stream(ctx, status, state, options);
+    let sink = ctx.stream_start;
+    if result == ResponseError.None && sink {
+        sink.input = true;
+    }
+    return result;
 }

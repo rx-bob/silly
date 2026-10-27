@@ -99,7 +99,8 @@ fn capacities() {
         });
 }
 
-fn options_and_freeze(options: silly::RouteOptions) {
+fn options_and_freeze(options: silly::RouteOptions,
+    expected: silly::RouteError = silly::RouteError.UnsupportedOptions) {
     var entries: silly::RouteEntry<i64>[>..] = [];
     var segments: silly::RouteSegment[>..] = [];
     var bytes: u8[>..] = [];
@@ -110,7 +111,7 @@ fn options_and_freeze(options: silly::RouteOptions) {
         ..
     };
     silly::post(router, "/stream", 1, options);
-    assert(silly::prepare(router).issue.error == silly::RouteError.UnsupportedOptions);
+    assert(silly::prepare(router).issue.error == expected);
 }
 
 fn prepared_registration() {
@@ -136,9 +137,16 @@ fn::main() {
     route_plan_invalid_test::options_and_freeze(silly::RouteOptions {
             body: silly::BodyMode.Streamed,
             ..
-        });
+        }, silly::RouteError.None);
     route_plan_invalid_test::options_and_freeze(silly::RouteOptions {
             body_bytes_max: -2,
+            ..
+        });
+    route_plan_invalid_test::options_and_freeze(silly::RouteOptions {
+            execution: silly::ExecutionClass.Lane {
+                index: 0
+            },
+            body: silly::BodyMode.Streamed,
             ..
         });
     route_plan_invalid_test::prepared_registration();

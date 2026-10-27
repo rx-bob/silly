@@ -52,6 +52,7 @@ struct ChunkWriter {
 struct StreamStart<S> {
     selected: bool = false,
     pending_bytes_max: i64 = 4096,
+    input: bool = false,
     state: S = default<S>(),
 }
 

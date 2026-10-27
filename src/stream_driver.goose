@@ -20,6 +20,12 @@ import.wire_transfer;
 
 struct StreamSlot<S> {
     active: bool = false,
+    input_enabled: bool = false,
+    input_ended: bool = false,
+    input_failed: bool = false,
+    input_eof: bool = false,
+    input_started_ms: i64 = -1,
+    input_stepped: bool = false,
     start: StreamStart<S> = StreamStart<S> {
     },
     producer: StreamProducer<S> = StreamProducer<S> {
