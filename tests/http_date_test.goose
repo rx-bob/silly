@@ -1,3 +1,4 @@
+// HTTP date parsing and rendering cover valid syntax and calendar edge cases.
 namespace http_date_test;
 
 import http_date from "../src";

@@ -1,3 +1,4 @@
+// Shared static response checks retain wire metadata and bounded body comparisons.
 namespace portal_checks;
 
 import silly from "..";

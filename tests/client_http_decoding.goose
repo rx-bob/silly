@@ -1,3 +1,4 @@
+// Client compression contracts distinguish automatic decoding from explicit raw transfer.
 namespace client_http_decoding;
 
 import client from "../client";

@@ -1,3 +1,4 @@
+// Socket cases for one application serving buffered pages and owned stream producers.
 namespace general_web_cases;
 
 import silly from "..";
@@ -7,8 +8,7 @@ import std;
 import.body_socket_fixture;
 import.connection_socket_fixture;
 import.general_web_types;
-
-extern fn silly_lifecycle_reset_close(fd: i32) -> i32;
+import.lifecycle_native;
 
 fn request(port: i32, method: u8[:], path: u8[:], body: u8[:] = "", media: u8[:] = "text/plain") -> u8[>..] {
     var socket = body_socket::connect(port);
@@ -125,7 +125,7 @@ fn disconnected(port: i32) {
     assert(ready);
     // Another route remains serviceable while an SSE producer waits.
     assert(find(payload(request(port, "GET", "/"), 200), "&lt;Ada&gt;") >= 0);
-    assert(silly_lifecycle_reset_close(socket.fd) == 0);
+    assert(lifecycle_native::silly_lifecycle_reset_close(socket.fd) == 0);
     silly_transport::close(socket);
     release(general_web::Route.Waiting, true);
     let extra, leaked = qpoll<general_web::Released>();

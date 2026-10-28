@@ -1,3 +1,4 @@
+// HTTP method and upload contracts use disposable local client fixtures.
 namespace client_http_methods;
 
 import client from "../client";

@@ -3,6 +3,7 @@ namespace portal_join_test;
 
 import adapters from "../examples/promptnook_contract";
 import client from "../client";
+import native_bindings from "../examples/promptnook_contract";
 import native_state from "../examples/promptnook_contract";
 import portal_proxy from "../examples/promptnook_contract";
 import proxy from "../client";
@@ -12,6 +13,7 @@ import std;
 
 import.body_socket_fixture;
 import.connection_socket_fixture;
+import.native_control;
 import.native_socket_fixture;
 import.promptnook_integration_runtime;
 import.promptnook_integration_types;
@@ -138,19 +140,19 @@ fn stop(front: Running&, back: Running&) {
 fn native_and_portal(port: i32) {
     var native = pn_integration::start();
     var request = body_socket::connect(native.api);
-    assert(native_socket::native_test_arm(1) == 0);
+    assert(native_control::native_test_arm(1) == 0);
     body_socket::send_bytes(request, connection_socket::request("GET", "/api/workspaces", 1,
         "Authorization: Bearer contract\r\n"));
-    assert(native_socket::native_test_wait(10000) == 0);
+    assert(native_control::native_test_wait(10000) == 0);
     portal_checks::file(portal_checks::exchange(port, "GET", "/asset.txt"), false, portal_checks::IDENTITY);
     portal_join_cases::proxy(port);
-    assert(native_socket::native_test_metric(3) == 1);
-    assert(native_socket::native_test_metric(4) == 0);
-    assert(native_socket::native_test_release() == 0);
+    assert(native_control::native_test_metric(3) == 1);
+    assert(native_control::native_test_metric(4) == 0);
+    assert(native_control::native_test_release() == 0);
     connection_socket::exact(connection_socket::receive(request), 1, 200, "listener:0:db:117");
     silly_transport::close(request);
     pn_integration::finish(native);
-    assert(native_socket::native_test_metric(4) == 1);
+    assert(native_control::native_test_metric(4) == 1);
     var completions = 0;
     while true {
         let done, present = qpoll<pn_integration::Finished>();

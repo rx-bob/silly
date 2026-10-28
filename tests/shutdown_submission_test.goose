@@ -1,10 +1,12 @@
 // A pre-close publication permit keeps a stopping lane alive until its owned task is enqueued.
 namespace shutdown_submission_test;
 
+import native_bindings from "../examples/promptnook_contract";
 import silly from "..";
 
 import std;
 
+import.native_control;
 import.shutdown_socket_fixture;
 
 struct LaneFixture {
@@ -17,7 +19,7 @@ struct LaneFixture {
 }
 
 fn start() -> LaneFixture {
-    assert(shutdown_socket::native_test_reset(0) == 0);
+    assert(native_control::native_test_reset(0) == 0);
     qlimit<shutdown_socket::Started>(1);
     qlimit<shutdown_socket::Stopped>(1);
     qlimit<shutdown_socket::ForeignResource>(1);
@@ -108,7 +110,7 @@ fn finish(lane: LaneFixture&) {
     let residual, stranded = qpoll<silly::LaneTask<silly::ExecutorLane0>>();
     assert(!stranded);
     assert(silly::runtime_control_submissions(lane.epoch) == 0);
-    assert(shutdown_socket::native_test_metric(1) == 1);
+    assert(native_control::native_test_metric(1) == 1);
     shutdown_socket::close_peer(lane.resource);
     silly_transport::close(lane.control.writer);
     silly_transport::close(lane.owner.reader);

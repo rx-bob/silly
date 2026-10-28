@@ -1,3 +1,4 @@
+// Borrowed JSON value views preserve types, lookup policy and missing/null distinctions.
 namespace json_view_test;
 
 import silly from "..";

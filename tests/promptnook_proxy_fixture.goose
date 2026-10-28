@@ -1,3 +1,4 @@
+// Writable fixture outputs provide disposable upstream settings to consumer tests.
 namespace pn_fixture;
 
 import std;

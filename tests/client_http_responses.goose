@@ -1,3 +1,4 @@
+// Client response contracts preserve status, headers, redirects and terminal errors.
 namespace client_http_responses;
 
 import client from "../client";

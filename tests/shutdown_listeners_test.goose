@@ -1,12 +1,14 @@
 // API and portal listeners share owners and shutdown, while requests retain their listener identity.
 namespace shutdown_listeners_test;
 
+import native_bindings from "../examples/promptnook_contract";
 import silly from "..";
 
 import std;
 
 import.body_socket_fixture;
 import.connection_socket_fixture;
+import.native_control;
 import.shutdown_socket_fixture;
 
 thread_fn supervisor(api: i32, portal: i32, wake: i32) {
@@ -87,7 +89,7 @@ fn requests(api_port: i32, portal_port: i32) {
 }
 
 fn run() {
-    assert(shutdown_socket::native_test_reset(0) == 0);
+    assert(native_control::native_test_reset(0) == 0);
     qlimit<shutdown_socket::ForeignResource>(1);
     qlimit<shutdown_socket::Started>(2);
     qlimit<shutdown_socket::Stopped>(2);

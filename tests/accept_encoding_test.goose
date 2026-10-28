@@ -1,3 +1,4 @@
+// Encoding quality and missing/empty header cases select acceptable representations.
 namespace accept_encoding_test;
 
 import accept_encoding from "../src";

@@ -1,3 +1,4 @@
+// Portal fixture server composes asynchronous static lookup with application fallback policy.
 namespace portal_server;
 
 import silly from "..";

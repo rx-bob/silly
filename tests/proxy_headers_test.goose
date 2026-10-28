@@ -1,3 +1,4 @@
+// Proxy request and response policies filter hop-by-hop fields and preserve end-to-end data.
 namespace proxy_headers_test;
 
 import client from "../client";

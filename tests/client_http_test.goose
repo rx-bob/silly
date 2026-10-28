@@ -1,3 +1,4 @@
+// HTTP client contracts combine requests, responses, decoding and cancellation.
 namespace client_http_test;
 
 import client from "../client";

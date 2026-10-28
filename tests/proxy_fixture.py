@@ -268,7 +268,10 @@ def duplex(port):
 
 
 def reset_and_cancel(port):
-    before = int(exchange(port, "/__stats")[2].split(b",")[2])
+    # Health retries can themselves fail admission while the previous slot is being released.
+    # Each deliberate abort has its own retained proxy tag; unrelated cleanup cannot affect it.
+    before = [int(value) for value in exchange(port, "/__stats")[2].split(b",")][6:15]
+    assert before == [0] * 9, ("abort tags must start unused", before)
     sock = socket.create_connection(("127.0.0.1", port), timeout=5)
     sock.settimeout(5)
     sock.sendall(b"GET /reset HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
@@ -298,8 +301,8 @@ def reset_and_cancel(port):
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
             sock.close()
             healthy(port)
-    after = int(exchange(port, "/__stats")[2].split(b",")[2])
-    assert after - before == 9, ("exactly one cancellation per aborted stream", before, after)
+    after = [int(value) for value in exchange(port, "/__stats")[2].split(b",")][6:15]
+    assert after == [1] * 9, ("exactly one cancellation for each tagged aborted stream", after)
 
 
 def run(executable, work):
@@ -321,10 +324,17 @@ def run(executable, work):
     shutdown_socket = None
     try:
         deadline = time.monotonic() + 10
-        while not ready.exists() and process.poll() is None and time.monotonic() < deadline:
+        port = None
+        while process.poll() is None and time.monotonic() < deadline:
+            try:
+                text = ready.read_text()
+                if text and text.isdecimal() and 0 < int(text) <= 65535:
+                    port = int(text)
+                    break
+            except FileNotFoundError:
+                pass
             time.sleep(0.01)
-        assert ready.exists(), ("proxy did not start", process.poll())
-        port = int(ready.read_text())
+        assert port is not None, ("proxy did not publish a complete port", process.poll())
         healthy(port)
         echo_cases(port, server.server_port)
         response_cases(port)

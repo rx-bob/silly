@@ -7,8 +7,7 @@ import std;
 
 import.body_socket_fixture;
 import.connection_socket_fixture;
-
-extern fn silly_lifecycle_reset_close(fd: i32) -> i32;
+import.lifecycle_native;
 
 struct App {
     mode: i32 = 0,
@@ -296,7 +295,7 @@ fn peer_reset(port: i32) {
     let handled = record(2);
     assert(handled.audit.response_payload.len == 8);
     assert(handled.audit.response_truncated);
-    assert(silly_lifecycle_reset_close(socket.fd) == 0);
+    assert(lifecycle_native::silly_lifecycle_reset_close(socket.fd) == 0);
     silly_transport::close(socket);
     let transferred = record(3);
     assert(transferred.transfer == silly::TransferOutcome.Cancelled);

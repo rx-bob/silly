@@ -131,6 +131,7 @@ fn capture_static_encoding<A>(state: StaticTransfer&, ctx: Context<A, StaticTran
     var combined: u8[..4096] = [];
     var present = false;
     var overflow = false;
+    // Each step advances through the bounded request header inventory.
     while true {
         let value = next_header(values);
         if !value.present {

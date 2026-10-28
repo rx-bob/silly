@@ -1,0 +1,3 @@
+// Core and nested client modules share a local package root in this composed example.
+c_sources = ["../client/native/client.c"];
+c_libs = ["curl", "z"];

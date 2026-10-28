@@ -1,12 +1,14 @@
 // Isolated process: a contained owner abort cannot run Stop or recover arbitrary native resources.
 namespace shutdown_abort_test;
 
+import native_bindings from "../examples/promptnook_contract";
 import silly from "..";
 
 import std;
 
 import.body_socket_fixture;
 import.connection_socket_fixture;
+import.native_control;
 import.shutdown_socket_fixture;
 
 fn run() {
@@ -26,7 +28,7 @@ fn run() {
     assert(stopped.lane == -1);
     let extra, lane_stopped = qpoll<shutdown_socket::Stopped>();
     assert(!lane_stopped);
-    assert(shutdown_socket::native_test_metric(1) == 0);
+    assert(native_control::native_test_metric(1) == 0);
     shutdown_socket::resource_open(running.foreign);
     poisoned_restart();
     // The fixture knows this raw descriptor; the runtime correctly made no arbitrary cleanup claim.

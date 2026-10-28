@@ -1,3 +1,4 @@
+// Native fixture outputs identify disposable HTTP and HTTPS upstream services.
 namespace client_fixture;
 
 extern fn silly_client_fixture_config(item: i32, output: u8[:]) -> i64;

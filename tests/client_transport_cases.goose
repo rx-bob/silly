@@ -1,3 +1,4 @@
+// Local client transport cases cover admission, progress and terminal resource ownership.
 namespace client_cases;
 
 import client from "../client";

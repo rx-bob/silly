@@ -1,12 +1,14 @@
 // Deadline returns a retained owner handle; only release plus resumed drain may close native state.
 namespace shutdown_resume_test;
 
+import native_bindings from "../examples/promptnook_contract";
 import silly from "..";
 
 import std;
 
 import.body_socket_fixture;
 import.connection_socket_fixture;
+import.native_control;
 import.shutdown_socket_fixture;
 
 struct PendingClients {
@@ -17,10 +19,10 @@ struct PendingClients {
 
 fn run() {
     var running = shutdown_socket::start();
-    assert(shutdown_socket::native_test_arm(1) == 0);
+    assert(native_control::native_test_arm(1) == 0);
     var client = body_socket::connect(running.port);
     body_socket::send_bytes(client, connection_socket::request("GET", "/blocking"));
-    assert(shutdown_socket::native_test_wait(10000) == 0);
+    assert(native_control::native_test_wait(10000) == 0);
     var pending_clients = queue_and_partial(running.port);
     assert(silly_transport::notify(running.wake).status == silly_transport::IoStatus.Ready);
     let returned = shutdown_socket::returned(running);
@@ -33,7 +35,7 @@ fn run() {
     connection_socket::closed(pending_clients.partial);
     connection_socket::closed(pending_clients.idle);
     shutdown_socket::resource_open(running.foreign);
-    assert(shutdown_socket::native_test_metric(1) == 0);
+    assert(native_control::native_test_metric(1) == 0);
     pending_restart_refused();
     var pending = returned.pending;
     var stale = pending;
@@ -45,7 +47,7 @@ fn run() {
     let rejected = silly::resume_shutdown(stale, 10);
     assert(rejected.error == silly::ServerError.InvalidShutdownHandle);
     shutdown_socket::resource_open(running.foreign);
-    assert(shutdown_socket::native_test_release() == 0);
+    assert(native_control::native_test_release() == 0);
     var final_handle = again.pending;
     let done = silly::resume_shutdown(final_handle, 10000);
     assert(!final_handle.active);
@@ -54,8 +56,8 @@ fn run() {
     assert(!done.pending.active);
     shutdown_socket::stopped();
     shutdown_socket::close_peer(running.foreign);
-    assert(shutdown_socket::native_test_metric(3) == 1);
-    assert(shutdown_socket::native_test_metric(4) == 1);
+    assert(native_control::native_test_metric(3) == 1);
+    assert(native_control::native_test_metric(4) == 1);
     silly_transport::close(client);
     silly_transport::close(pending_clients.queued);
     silly_transport::close(pending_clients.partial);
@@ -115,12 +117,12 @@ fn pending_restart_refused() {
 
 fn graceful_before_deadline() {
     var running = shutdown_socket::start(2);
-    assert(shutdown_socket::native_test_arm(1) == 0);
+    assert(native_control::native_test_arm(1) == 0);
     var client = body_socket::connect(running.port);
     body_socket::send_bytes(client, connection_socket::request("GET", "/blocking"));
-    assert(shutdown_socket::native_test_wait(10000) == 0);
+    assert(native_control::native_test_wait(10000) == 0);
     assert(silly_transport::notify(running.wake).status == silly_transport::IoStatus.Ready);
-    assert(shutdown_socket::native_test_release() == 0);
+    assert(native_control::native_test_release() == 0);
     let returned = shutdown_socket::returned(running);
     assert(returned.ok);
     assert(returned.drain == silly::DrainStatus.Complete);
@@ -128,7 +130,7 @@ fn graceful_before_deadline() {
     connection_socket::exact(body_socket::receive_closed(client), 1, 200, "listener:0:377");
     shutdown_socket::stopped();
     shutdown_socket::close_peer(running.foreign);
-    assert(shutdown_socket::native_test_metric(4) == 1);
+    assert(native_control::native_test_metric(4) == 1);
     silly_transport::close(client);
     silly_transport::close(running.wake);
 }

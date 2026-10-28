@@ -7,8 +7,7 @@ import std;
 
 import.body_socket_fixture;
 import.connection_socket_fixture;
-
-extern fn silly_lifecycle_reset_close(fd: i32) -> i32;
+import.lifecycle_native;
 
 struct App {
 }
@@ -204,7 +203,7 @@ fn disconnected(port: i32) {
     var peer = acquired();
     let waiting, present = qget<Waiting>(10000);
     assert(present);
-    assert(silly_lifecycle_reset_close(socket.fd) == 0);
+    assert(lifecycle_native::silly_lifecycle_reset_close(socket.fd) == 0);
     silly_transport::close(socket);
     released(peer, true, 1);
 }

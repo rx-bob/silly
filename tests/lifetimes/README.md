@@ -1,57 +1,67 @@
-# E1 compiler lifetime and ownership fixtures
+# Compiler lifetime and ownership contracts
 
-These are compiler contract tests. Files ending in `_rejected.goose` must fail
-`goose check`; a failed import or syntax error does not count as a passing test.
-Run each fixture independently so one rejection cannot hide another.
+Run all 28 fixtures independently: 27 negative contracts and one positive
+`scoped_views.goose` contract. A failed import or syntax error is never evidence
+of the intended rejection. The verification runner checks a specific diagnostic
+fragment for each rejected fixture in debug and optimized builds.
 
-| Fixture | Expected result / diagnostic fragment |
+| Fixture | Required diagnostic fragment (or successful result) |
 | --- | --- |
-| `scoped_views.goose` | Success without copy-on-return warnings. Borrowed request metadata and handler context stay within driver-owned roots. Grow-only output append preserves existing views; reset follows the final use. |
-| `request_clear_rejected.goose` | Failure containing `cannot clear bytes` and `request is still used`. |
-| `output_clear_rejected.goose` | Failure containing `cannot clear output` and `transport_view is still used`. |
-| `local_escape_rejected.goose` | Failure containing `returning a reference rooted in bytes, which dies with this function`. |
-| `immutable_request_rejected.goose` | Failure containing `cannot assign through this path`. |
-| `stream_state_escape_rejected.goose` | Failure containing `storing a reference rooted at state, which does not outlive the destination`. A fixed-size struct cannot smuggle handler-local views into a stream sink. |
-| `resizable_stream_rejected.goose` | Failure containing `default<T>() needs a fixed-size type`. Explicitly initializing the sink's state cannot bypass the fixed-size check in `start_stream`. |
-| `borrowed_queue_rejected.goose` | Failure containing `queue elements must be flat`. Cross-thread messages cannot retain borrowed slice addresses. |
+| `borrowed_queue_rejected.goose` | `queue elements must be flat` |
+| `endpoint_guard_rejected.goose` | `return from silly::endpoint: no enclosing call of silly::endpoint on this compile-time call path` |
+| `endpoint_reject_rejected.goose` | `return from silly::endpoint: no enclosing call of silly::endpoint on this compile-time call path` |
+| `header_index_reset_rejected.goose` | `cannot clear index while values is still used` |
+| `header_iterator_reset_rejected.goose` | `cannot clear bytes while values is still used` |
+| `header_value_reset_rejected.goose` | `cannot clear bytes while value is still used` |
+| `html_writer_escape_rejected.goose` | `storing a reference rooted at scope, which does not outlive the destination` |
+| `immutable_request_rejected.goose` | `cannot assign through this path` |
+| `json_binding_input_reset_rejected.goose` | `cannot clear input while bound is still used` |
+| `json_binding_scratch_reset_rejected.goose` | `cannot clear scratch while bound is still used` |
+| `json_owned_binding_rejected.goose` | `resizable field value of struct JsonBinding must be the final field` |
+| `json_writer_enum_rejected.goose` | `fields requires a concrete struct or variant type, got Unsupported` |
+| `json_writer_optional_rejected.goose` | `no matching overload for call to json_default_field` |
+| `local_escape_rejected.goose` | `returning a reference rooted in bytes, which dies with this function` |
+| `output_clear_rejected.goose` | `cannot clear output while transport_view is still used` |
+| `producer_input_escape_rejected.goose` | `which does not outlive the destination` |
+| `public_stream_resizable_rejected.goose` | `default<T>() needs a fixed-size type` |
+| `query_input_reset_rejected.goose` | `cannot clear input while value is still used` |
+| `query_scratch_reset_rejected.goose` | `cannot clear scratch while value is still used` |
+| `query_view_reset_rejected.goose` | `cannot clear scratch while value is still used` |
+| `request_clear_rejected.goose` | `cannot clear bytes while request is still used` |
+| `resizable_stream_rejected.goose` | `default<T>() needs a fixed-size type` |
+| `response_policy_clear_rejected.goose` | `cannot clear router while plan is still used` |
+| `route_capture_reset_rejected.goose` | `cannot clear target while value is still used` |
+| `route_plan_clear_rejected.goose` | `cannot clear bytes while plan is still used` |
+| `route_plan_mutation_rejected.goose` | `cannot assign through this path` |
+| `scoped_views.goose` | Success without copy-on-return warnings. |
+| `stream_state_escape_rejected.goose` | `storing a reference rooted at state, which does not outlive the destination` |
 
-Example, from the repository root:
+From the repository root, individual checks use:
 
 ```text
-goose check tests/lifetimes/scoped_views.goose
-goose check tests/lifetimes/request_clear_rejected.goose
+goose check tests/lifetimes/scoped_views.goose --offline -O0 --debug
+goose check tests/lifetimes/scoped_views.goose --offline -O2
+goose check tests/lifetimes/request_clear_rejected.goose --offline -O0 --debug
+goose check tests/lifetimes/request_clear_rejected.goose --offline -O2
 ```
 
-The second command must exit nonzero with the indicated lifetime diagnostic.
-Validate positive and negative fixtures at `-O2` and `-O0 --debug`.
+The last two commands must fail with the table's lifetime diagnostic. The
+positive fixture must succeed in both modes. See `scripts/check.goose` for the
+full deterministic compiler and functional suite.
 
-The installed compiler tracks last use: reset after the final dependent use can
-be accepted even inside the same lexical block. The rejected fixtures deliberately
-use each view after the attempted reset. Grow-only `u8[>..]` append is legal while
-an older view is live; its existing bytes remain valid. Clearing or shrinking
-that owner while the view is still needed is rejected. Response commitment and
-transport acknowledgement additionally require runtime lifecycle checks; compiler
-lifetimes alone do not prove those protocol states.
+The compiler tracks last use, so reset after a view's final use may be accepted
+inside the same lexical block. Rejected fixtures deliberately use their views
+after reset. Grow-only append preserves existing bytes, while clearing or
+shrinking their owner requires ending all dependent borrows first.
 
-E1.S4 extends these checks to stream handoff and cross-thread messages. The positive
-`tests/api_contract_test.goose` proves real Context/StreamStart ownership with the exact
-three target callback overload shapes through clearly labeled proof-local adapters.
-Its handler clears its local inline state after handoff; producer steps later observe
-the retained owned copy. Runtime continuation and queue tests separately prove terminal
-cleanup, generation rejection and targeted delivery; the compile-negative tests are not
-a substitute for those state-machine assertions.
+The endpoint cases prove that terminal helpers require an enclosing endpoint on
+every static call path. Stream cases reject borrowed producer input, escaping
+handler-local state, and resizable state even when sinks are explicitly initialized.
+The JSON-owned-binding fixture rejects a dynamic field before the binding result's
+error field; this is a layout restriction, not a JSON parse diagnostic.
 
-E3.S1 adds `route_plan_clear_rejected.goose` (diagnostic `cannot clear bytes`) and
-`route_plan_mutation_rejected.goose` (`cannot assign through this path`). These prove
-retained inventory ownership and const prepared entry access in both compiler modes.
-
-E4.S1 adds `header_value_reset_rejected.goose` and
-`header_iterator_reset_rejected.goose` (diagnostic `cannot clear bytes`), plus
-`header_index_reset_rejected.goose` (`cannot clear index`). Each uses the retained value
-or cursor after the attempted reset. `indexed_header_test.goose` exercises legal reset
-after final use and fresh parsing with the reused byte owner.
-
-E7.S1 adds `producer_input_escape_rejected.goose` (diagnostic `which does not
-outlive the destination`) and `public_stream_resizable_rejected.goose` (diagnostic
-`default<T>() needs a fixed-size type`). These reject retaining step-local input in
-producer state and bypassing fixed-state checks through an explicitly initialized sink.
+`tests/api_contract_test.goose` separately proves static callback shapes using
+clearly labelled proof-local adapters. Functional route, stream, continuation,
+queue and lifecycle tests prove runtime commitment, once-only cleanup, generation
+routing and cancellation; compiler rejection alone does not establish those
+protocol properties.

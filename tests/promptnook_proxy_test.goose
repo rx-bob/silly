@@ -1,3 +1,4 @@
+// Local HTTP/HTTPS consumer contracts exercise Portal and MCP adapters.
 namespace pn_proxy_test;
 
 import client from "../client";

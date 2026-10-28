@@ -1,3 +1,4 @@
+// Owned response metadata and body access preserve typed client outcomes.
 namespace client_response_test;
 
 import client from "../client";

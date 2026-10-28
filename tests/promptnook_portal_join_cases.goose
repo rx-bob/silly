@@ -1,3 +1,4 @@
+// Consumer Portal cases exercise the joined static and proxy listener.
 namespace portal_join_cases;
 
 import silly from "..";

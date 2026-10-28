@@ -1,3 +1,4 @@
+// Public handlers compose escaped HTML, form input, JSON, files and stream admission.
 namespace general_web;
 
 import silly from "..";

@@ -1,3 +1,4 @@
+// Bounded polling helpers observe the public client request lifecycle.
 namespace client_http;
 
 import client from "../client";

@@ -1,3 +1,4 @@
+// Local proxy server fixture composes public client and response stream APIs.
 namespace proxy_server;
 
 import client from "../client";
@@ -13,6 +14,7 @@ struct App {
     upstream: u8[..128] = [],
     refused: u8[..128] = [],
     stall: u8[..128] = [],
+    cancellation_cases: i64 = 0,
 }
 enum Route {
     Proxy,
@@ -29,6 +31,13 @@ type Context = silly::Context<App, silly_client::ProxyTransfer>;
 
 fn target(ctx: Context&, options: silly_client::ProxyOptions&) -> u8[>..] {
     let value = ctx.request.target;
+    if value == "/reset" || value == "/connect-stall" || value == "/stall-upload"
+        || value == "/stall-header" || value == "/stall-body" {
+        // Tags 0..2 belong to ordinary/inspection/error cases; each abort probe owns a distinct tag.
+        assert(ctx.app.cancellation_cases < 13);
+        options.tag = (3 + ctx.app.cancellation_cases)as u64;
+        ctx.app.cancellation_cases += 1;
+    }
     var path: u8[>..] = [];
     if starts_with(value, "/incoming/") {
         options.authorization = silly_client::ProxyAuthorization.Incoming;
@@ -68,8 +77,11 @@ fn target(ctx: Context&, options: silly_client::ProxyOptions&) -> u8[>..] {
 
 fn handle(ctx: Context&, route: Route) {
     if route == Route.Stats {
-        let stats = str(proxy_fixture::silly_proxy_stat(0, 1), ",", proxy_fixture::silly_proxy_stat(1, 1),
+        var stats = str(proxy_fixture::silly_proxy_stat(0, 1), ",", proxy_fixture::silly_proxy_stat(1, 1),
             ",", proxy_fixture::silly_proxy_stat(2, 0));
+        for tag in 16 {
+            stats.append(str(",", proxy_fixture::silly_proxy_stat(3, tag)));
+        }
         assert(silly::respond_text(ctx, 200, stats) == silly::ResponseError.None);
         return;
     }
@@ -122,7 +134,7 @@ fn inspect(info: silly_client::ProxyInspection, head: silly_client::ClientRespon
 
 fn step(state: silly_client::ProxyTransfer&, event: silly::StreamEvent, out: silly::ChunkWriter&) -> silly::StreamStep {
     if event == silly::StreamEvent.Cancelled {
-        proxy_fixture::silly_proxy_cancelled();
+        proxy_fixture::silly_proxy_cancelled(state.tag as i64);
     }
     return silly_client::proxy_step_with_policy(state, event, out, map_error, inspect);
 }

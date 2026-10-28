@@ -9,16 +9,6 @@ import std;
 import.body_socket_fixture;
 import.connection_socket_fixture;
 
-extern fn native_test_reset(failing: i32) -> i32;
-
-extern fn native_test_arm(kind: i32) -> i32;
-
-extern fn native_test_wait(timeout_ms: i32) -> i32;
-
-extern fn native_test_release() -> i32;
-
-extern fn native_test_metric(index: i32) -> i64;
-
 struct Started {
     owner: silly::Owner,
     native: bool

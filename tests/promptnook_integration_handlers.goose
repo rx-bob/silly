@@ -2,6 +2,7 @@
 namespace pn_integration;
 
 import adapters from "../examples/promptnook_contract";
+import native_bindings from "../examples/promptnook_contract";
 import native_state from "../examples/promptnook_contract";
 import silly from "..";
 

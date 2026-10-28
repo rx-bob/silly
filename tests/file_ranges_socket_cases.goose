@@ -1,3 +1,4 @@
+// Socket assertions verify byte ranges, multipart framing and conditional responses.
 namespace range_cases;
 
 import silly from "..";

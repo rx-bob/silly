@@ -7,13 +7,13 @@ import std;
 
 import.body_socket_fixture;
 import.connection_socket_fixture;
+import.lifecycle_native;
+import.native_control;
 import.native_socket_fixture;
 import.promptnook_integration_types;
 
 const AUTH = "Authorization: Bearer contract\r\n";
 const ORIGIN = "Origin: https://client.test\r\n";
-extern fn silly_lifecycle_reset_close(fd: i32) -> i32;
-
 fn exchange(port: i32, method: u8[:], target: u8[:], fields: u8[:] = "", body: u8[:] = "") -> u8[>..] {
     var socket = body_socket::connect(port);
     body_socket::send_bytes(socket, connection_socket::request(method, target, 1, fields, body));
@@ -56,22 +56,22 @@ fn policy_and_adapters(running: Running) {
 fn cross_listener_serialization(running: Running) {
     var api = body_socket::connect(running.api);
     var portal = body_socket::connect(running.portal);
-    let before = native_socket::native_test_metric(3);
-    assert(native_socket::native_test_arm(1) == 0);
+    let before = native_control::native_test_metric(3);
+    assert(native_control::native_test_arm(1) == 0);
     body_socket::send_bytes(api, connection_socket::request("GET", "/api/workspaces", 1, AUTH));
-    assert(native_socket::native_test_wait(10000) == 0);
+    assert(native_control::native_test_wait(10000) == 0);
     body_socket::send_bytes(portal, connection_socket::request("GET", "/api/workspaces", 1, AUTH));
     // Both listeners still admit inline work while the process-wide native owner is paused.
     health(running.api, 0);
     health(running.portal, 1);
-    assert(native_socket::native_test_metric(3) == before + 1);
-    assert(native_socket::native_test_metric(4) == before);
-    assert(native_socket::native_test_metric(2) == 0);
-    assert(native_socket::native_test_release() == 0);
+    assert(native_control::native_test_metric(3) == before + 1);
+    assert(native_control::native_test_metric(4) == before);
+    assert(native_control::native_test_metric(2) == 0);
+    assert(native_control::native_test_release() == 0);
     connection_socket::exact(connection_socket::receive(api), 1, 200, "listener:0:db:117");
     connection_socket::exact(connection_socket::receive(portal), 1, 200, "listener:1:db:227");
-    assert(native_socket::native_test_metric(3) == before + 2);
-    assert(native_socket::native_test_metric(4) == before + 2);
+    assert(native_control::native_test_metric(3) == before + 2);
+    assert(native_control::native_test_metric(4) == before + 2);
     silly_transport::close(api);
     silly_transport::close(portal);
 }
@@ -98,14 +98,14 @@ fn large_chunked_and_limits(running: Running) {
 
 fn disconnect_native(running: Running) {
     var socket = body_socket::connect(running.portal);
-    assert(native_socket::native_test_arm(1) == 0);
+    assert(native_control::native_test_arm(1) == 0);
     body_socket::send_bytes(socket, connection_socket::request("GET", "/api/workspaces", 1, AUTH));
-    assert(native_socket::native_test_wait(10000) == 0);
-    assert(silly_lifecycle_reset_close(socket.fd) == 0);
+    assert(native_control::native_test_wait(10000) == 0);
+    assert(lifecycle_native::silly_lifecycle_reset_close(socket.fd) == 0);
     silly_transport::close(socket);
     health(running.api, 0);
     health(running.portal, 1);
-    assert(native_socket::native_test_release() == 0);
+    assert(native_control::native_test_release() == 0);
     // A subsequent lane round-trip proves the abandoned sequence completed without corrupting globals.
     connection_socket::exact(exchange(running.api, "GET", "/api/workspaces", AUTH), 1, 200, "listener:0:db:117");
 }

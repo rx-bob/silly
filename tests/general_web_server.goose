@@ -1,3 +1,4 @@
+// One real listener hosts the composed general-web handlers and owned producers.
 namespace general_web;
 
 import silly from "..";

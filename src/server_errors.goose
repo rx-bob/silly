@@ -1,3 +1,4 @@
+// Classified server failures separate setup, transport, routing and application errors.
 namespace silly;
 
 enum ServerError {

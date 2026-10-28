@@ -1,3 +1,4 @@
+// Bounded multipart file framing retains exact range boundaries and representation bytes.
 namespace file_multipart_test;
 
 import file_multipart from "../src";

@@ -1,3 +1,4 @@
+// Byte-range parsing handles forms, normalization, unsatisfied spans and finite caps.
 namespace file_ranges_test;
 
 import file_ranges from "../src";

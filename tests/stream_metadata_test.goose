@@ -1,3 +1,4 @@
+// Deferred stream metadata remains owned and mutable only before wire commitment.
 namespace stream_metadata_test;
 
 import chunk_writer from "../src";

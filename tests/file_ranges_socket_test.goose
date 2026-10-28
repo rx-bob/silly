@@ -1,3 +1,4 @@
+// Disposable file server drives range and conditional wire contracts.
 namespace file_ranges_socket_test;
 
 import silly from "..";

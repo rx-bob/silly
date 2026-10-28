@@ -1,3 +1,4 @@
+// Shared disposable client fixture startup, polling and shutdown assertions.
 namespace client_test;
 
 import client from "../client";

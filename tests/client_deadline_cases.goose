@@ -1,3 +1,4 @@
+// Client deadline cases distinguish terminal timeouts from pending transport progress.
 namespace client_deadlines;
 
 import client from "../client";

@@ -1,3 +1,4 @@
+// Directory HTML escaping and output limits preserve untrusted file names as data.
 namespace directory_html_test;
 
 import directory_html from "../src";

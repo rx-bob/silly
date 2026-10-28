@@ -1,34 +1,14 @@
 // Real blocking native work and explicit foreign descriptors expose bounded shutdown ownership.
 namespace shutdown_socket;
 
+import native_bindings from "../examples/promptnook_contract";
 import silly from "..";
 
 import std;
 
 import.body_socket_fixture;
 import.connection_socket_fixture;
-
-extern fn promptnook_contract_open() -> i32;
-
-extern fn promptnook_contract_close() -> i32;
-
-extern fn promptnook_contract_prepare(value: i64) -> i32;
-
-extern fn promptnook_contract_bind(value: i64) -> i32;
-
-extern fn promptnook_contract_query() -> i32;
-
-extern fn promptnook_contract_read() -> i64;
-
-extern fn native_test_reset(failing: i32) -> i32;
-
-extern fn native_test_arm(kind: i32) -> i32;
-
-extern fn native_test_wait(timeout: i32) -> i32;
-
-extern fn native_test_release() -> i32;
-
-extern fn native_test_metric(index: i32) -> i64;
+import.native_control;
 
 enum Route {
     Inline,
@@ -109,15 +89,15 @@ fn handle(ctx: silly::Context<App, silly::NoStream> & , route: Route) {
         return;
     }
     assert(ctx.app.owner.is_serialized("native_shutdown"));
-    assert(promptnook_contract_prepare(37) == 0);
-    assert(promptnook_contract_bind(37) == 0);
+    assert(promptnook_native_example::promptnook_contract_prepare(37) == 0);
+    assert(promptnook_native_example::promptnook_contract_bind(37) == 0);
     assert(qput(Began {
         }));
     if ctx.app.mode == 1 {
         abort("contained shutdown fixture abort");
     }
-    assert(promptnook_contract_query() == 0);
-    let value = promptnook_contract_read();
+    assert(promptnook_native_example::promptnook_contract_query() == 0);
+    let value = promptnook_native_example::promptnook_contract_read();
     assert(value == 377);
     ctx.text(200, str("listener:", ctx.request.listener_id, ":", value));
 }
@@ -126,7 +106,7 @@ fn lifecycle(app: App&, event: silly::Lifecycle<Route>) -> silly::HookResult {
     match event {
         Start start => {
             if app.owner.lane == 0 {
-                assert(promptnook_contract_open() == 0);
+                assert(promptnook_native_example::promptnook_contract_open() == 0);
             }
             assert(qput(Started {
                     lane: app.owner.lane
@@ -136,7 +116,7 @@ fn lifecycle(app: App&, event: silly::Lifecycle<Route>) -> silly::HookResult {
             assert(!app.stopped);
             app.stopped = true;
             if app.owner.lane == 0 {
-                assert(promptnook_contract_close() == 0);
+                assert(promptnook_native_example::promptnook_contract_close() == 0);
                 assert(silly_transport::close(app.resource).status == silly_transport::IoStatus.Ready);
             }
             assert(qput(Stopped {
@@ -199,7 +179,7 @@ thread_fn supervisor(listener: i32, wake: i32, mode: i64) {
 }
 
 fn start(mode: i64 = 0) -> Running {
-    assert(native_test_reset(0) == 0);
+    assert(native_control::native_test_reset(0) == 0);
     qlimit<ForeignResource>(1);
     qlimit<Started>(2);
     qlimit<Stopped>(2);
@@ -261,5 +241,5 @@ fn stopped() {
     assert(first.lane != second.lane);
     let extra, has_extra = qpoll<Stopped>();
     assert(!has_extra);
-    assert(native_test_metric(1) == 1);
+    assert(native_control::native_test_metric(1) == 1);
 }

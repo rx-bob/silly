@@ -6,6 +6,7 @@ import silly from "..";
 import std;
 
 import.body_socket_fixture;
+import.native_control;
 import.native_socket_fixture;
 import.promptnook_integration_handlers;
 import.promptnook_integration_types;
@@ -67,7 +68,7 @@ thread_fn supervisor(api: i32, portal: i32, wake: i32) {
 }
 
 fn start() -> Running {
-    assert(native_socket::native_test_reset(0) == 0);
+    assert(native_control::native_test_reset(0) == 0);
     qlimit<Started>(3);
     qlimit<Stopped>(3);
     qlimit<Finished>(128);
@@ -103,7 +104,7 @@ fn start() -> Running {
         }
     }
     assert(native == 1);
-    assert(native_socket::native_test_metric(0) == 1);
+    assert(native_control::native_test_metric(0) == 1);
     return Running {
         thread: owner,
         api: api_port,
@@ -140,8 +141,8 @@ fn finish(running: Running&) {
         }
     }
     assert(native == 1);
-    assert(native_socket::native_test_metric(1) == 1);
-    assert(native_socket::native_test_metric(2) == 0);
+    assert(native_control::native_test_metric(1) == 1);
+    assert(native_control::native_test_metric(2) == 0);
     let extra, present = qpoll<Stopped>();
     assert(!present);
     closed_listener(running.api);

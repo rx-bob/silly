@@ -1,3 +1,4 @@
+// Portal static cases cover encoding, metadata, directories and persistent requests.
 namespace portal_cases;
 
 import silly from "..";

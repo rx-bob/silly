@@ -1,3 +1,4 @@
+// Borrowed JSON object and array iteration preserves raw and decoded owner offsets.
 namespace silly;
 
 import json;
@@ -130,6 +131,7 @@ fn json_member(value: JsonValue, key: u8[:], duplicates: JsonDuplicate = JsonDup
     var decoded_start: i64 = 0;
     var decoded_size: i64 = 0;
     var kind = JsonKind.Null;
+    // Parsed collection limits and the advancing raw-byte cursor bound this scan.
     loop {
         let member = next_json_member(it);
         if member.error != JsonError.None {

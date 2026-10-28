@@ -1,3 +1,4 @@
+// Consumer proxy server applies source-derived environment, header and audit policy.
 namespace pn_server;
 
 import client from "../client";

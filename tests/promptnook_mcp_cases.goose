@@ -1,3 +1,4 @@
+// MCP adapter cases retain normalization, authorization, status and error conventions.
 namespace promptnook_mcp_cases;
 
 import client from "../client";

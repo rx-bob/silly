@@ -1,3 +1,4 @@
+// Bounded Portal audit extraction retains selected facts without storing credentials.
 namespace promptnook_audit_cases;
 
 import client from "../client";

@@ -1,3 +1,4 @@
+// Disposable Portal static integration covers files, listings, compression and fallback.
 namespace static_portal_test;
 
 import silly from "..";

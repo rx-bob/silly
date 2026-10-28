@@ -2,11 +2,13 @@
 namespace promptnook_integration_test;
 
 import adapters from "../examples/promptnook_contract";
+import native_bindings from "../examples/promptnook_contract";
 import native_state from "../examples/promptnook_contract";
 import silly from "..";
 
 import std;
 
+import.native_control;
 import.native_socket_fixture;
 import.promptnook_integration_cases;
 import.promptnook_integration_runtime;
@@ -56,7 +58,7 @@ fn::main() {
     pn_integration::disconnect_native(running);
     pn_integration::finish(running);
     promptnook_integration_test::completions();
-    assert(native_socket::native_test_metric(5) == 1);
-    assert(native_socket::native_test_metric(6) == 1);
+    assert(native_control::native_test_metric(5) == 1);
+    assert(native_control::native_test_metric(6) == 1);
     print("API/Portal native ownership, lifecycle, CORS, adapters and bounded body integration passed");
 }

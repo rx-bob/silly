@@ -79,6 +79,7 @@ fn static_file_response<A>(ctx: Context<A, FileTransfer> & , file: OwnedFile&, p
 
 fn capture_file_conditions(state: FileTransfer&, request: Request) {
     var values = header_values(request, "If-None-Match");
+    // Iteration count cannot exceed the validated request header count.
     while true {
         let value = next_header(values);
         if !value.present {

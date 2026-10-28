@@ -1,0 +1,2002 @@
+{
+  "source_root": "/Users/bob/repos/nook/promptnook/backend/goose",
+  "revision": "b930861ecf0da8379a82ff7021c8b05d9217b51f",
+  "status": "?? ./",
+  "identity_algorithm": "sha256 of sorted UTF-8 relative_path + NUL + file_sha256 + LF records",
+  "content_identity_sha256": "941e4b53a6c31c14f9c7c743255c18f1bca22607600f5374eb6f6e6fce17c51b",
+  "non_poc_goose_count": 118,
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "568cede852f6606176cf3c5bdb7c44955e1284b1d3091fe29ad4fee7131cdaad",
+      "bytes": 6662,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "Taskfile.yml",
+      "sha256": "038f4783e6c49396b5ba73b8289beac818fcb047b22a012e816d25feaf49b5cc",
+      "bytes": 854,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "admin/admin.goose",
+      "sha256": "21d636ad86f457511bc8874387819f1ec6dbf1e752b399da9352fade204e20d2",
+      "bytes": 18489,
+      "symbols": [
+        "request_id",
+        "err",
+        "success",
+        "admin_authorized",
+        "finish_dispatch",
+        "dispatch",
+        "log_request",
+        "parse_config",
+        "valid_email",
+        "dispatch_render",
+        "dispatch_rid",
+        "dispatch_rid_get",
+        "dispatch_rid_get_2",
+        "dispatch_rid_get_post"
+      ],
+      "native_calls": [
+        "pn_crc32_hex",
+        "pn_query_value",
+        "pn_request_header",
+        "pn_request_id"
+      ]
+    },
+    {
+      "path": "admin/entities.goose",
+      "sha256": "96505969e1b83511bdb3679944f155eda1ade5492c3f58c0d02c4062201bc026",
+      "bytes": 16824,
+      "symbols": [
+        "workspace_tree",
+        "workspace_fingerprint",
+        "workspace_by_id",
+        "node_fingerprint",
+        "workspace_tree_handle",
+        "workspace_by_id_read",
+        "workspace_by_id_id",
+        "workspace_by_id_render",
+        "workspace_by_id_id_render",
+        "workspace_by_id_id_read"
+      ],
+      "native_calls": [
+        "pn_crc32_hex",
+        "pn_query_value"
+      ]
+    },
+    {
+      "path": "admin/entity_read_helpers.goose",
+      "sha256": "e5b738e9b546020d221634bee1f4684300e3abb5082df97a58e6ec6e1c629a00",
+      "bytes": 16818,
+      "symbols": [
+        "prompt_by_id",
+        "idea_link_array",
+        "append_idea_contract",
+        "idea_state",
+        "mutate_idea_lifecycle_index",
+        "idea_record_fingerprint",
+        "load_idea",
+        "idea_by_id",
+        "prompt_by_id_render",
+        "load_idea_actual",
+        "prompt_by_id_render_2",
+        "prompt_by_id_handle"
+      ],
+      "native_calls": [
+        "pn_crc32_hex",
+        "pn_query_value"
+      ]
+    },
+    {
+      "path": "admin/idea_edits.goose",
+      "sha256": "364e7e7903703e201e51e194c0f7b4e48b9657cbf4ecc27d4b3c99a5d510ff0d",
+      "bytes": 15094,
+      "symbols": [
+        "edit_idea",
+        "edit_idea_state_patch",
+        "edit_idea_state_patch_store",
+        "edit_idea_state_patch_found",
+        "edit_idea_state_patch_handle",
+        "edit_idea_state_patch_validate",
+        "edit_idea_state_patch_found_trashed"
+      ],
+      "native_calls": [
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "admin/project_details.goose",
+      "sha256": "e58ffcac3a92d37b968e8dc616d0c8c9e73031103d129a33851d221540e2ffaf",
+      "bytes": 13209,
+      "symbols": [
+        "project_by_id",
+        "project_by_id_epics",
+        "project_by_id_epics_item_id",
+        "project_by_id_epics_item_id_2",
+        "project_by_id_epics_render",
+        "project_by_id_epics_item_id_3",
+        "project_by_id_epics_read"
+      ],
+      "native_calls": [
+        "pn_crc32_hex",
+        "pn_query_value"
+      ]
+    },
+    {
+      "path": "admin/project_prompt_helpers.goose",
+      "sha256": "3b0b6a69589a263ade97078482674540eadd267579bb208247eba11048432818",
+      "bytes": 15022,
+      "symbols": [
+        "edit_value_set",
+        "prompt_content_fingerprint",
+        "edit_prompt_content",
+        "edit_value_set_has_values",
+        "edit_prompt_content_store",
+        "edit_prompt_content_has_prompt",
+        "edit_value_set_has_values_handle",
+        "edit_value_set_has_values_finish"
+      ],
+      "native_calls": [
+        "pn_crc32_hex",
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "admin/raw.goose",
+      "sha256": "8cdde9b3883e985788326c987a592a9ce7ba3c7c0475c1b1ce4319268660203d",
+      "bytes": 11066,
+      "symbols": [
+        "raw_blocked",
+        "raw_column_value",
+        "raw_binary_summary",
+        "raw_parser_info",
+        "raw_string_index_field",
+        "raw_normalize_string_index",
+        "raw_normalize_mcp_usage",
+        "raw_normalize_mcp_hourly_usage",
+        "raw_normalize_mcp_recent_calls",
+        "raw_normalize_user_profile",
+        "raw_parser_info_handle",
+        "raw_parser_info_handle_2",
+        "raw_parser_info_handle_3"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_account_sync.goose",
+      "sha256": "33c0fdc36a491e6607b6c57cf6ffe5fdd2832df3fa68a19b11c920b2ea3d6034",
+      "bytes": 10326,
+      "symbols": [
+        "sync_workspace_legacy",
+        "sync_user_profile_legacy",
+        "sync_workspace_user_index_from_raw",
+        "sync_user_preferences_from_raw",
+        "raw_typed_idea_value",
+        "sync_idea_from_raw",
+        "sync_mcp_usage_from_raw",
+        "sync_mcp_hourly_usage_from_raw",
+        "sync_mcp_recent_calls_from_raw"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_auxiliary_schemas.goose",
+      "sha256": "b2fc0a5aeb61a5c62fe4da612d040c40f2436e85e8bb9458563400e765c178a2",
+      "bytes": 7763,
+      "symbols": [
+        "raw_index_model_name",
+        "raw_schema_matches_auxiliary",
+        "raw_index_model_name_handle",
+        "raw_schema_matches_auxiliary_handle",
+        "raw_schema_matches_auxiliary_handle_2",
+        "raw_schema_matches_auxiliary_string_field",
+        "raw_schema_matches_auxiliary_handle_3"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_decoding.goose",
+      "sha256": "b34025293542d98f6acd0fdebae323c2066cb8d16a6ae65c2a5429f61f58b90b",
+      "bytes": 11034,
+      "symbols": [
+        "raw_exact",
+        "raw_value_format",
+        "raw_value_metadata",
+        "raw_value_encoding",
+        "raw_decode_value",
+        "raw_exact_validate",
+        "raw_exact_handle",
+        "raw_exact_validate_2",
+        "raw_exact_validate_3"
+      ],
+      "native_calls": [
+        "pn_crc32_hex",
+        "pn_query_value",
+        "pn_utf8_valid"
+      ]
+    },
+    {
+      "path": "admin/raw_entity_records.goose",
+      "sha256": "7c54f8df038657fe8889548521b4a662da1f99889080f652772e932bb180edc8",
+      "bytes": 10438,
+      "symbols": [
+        "raw_typed_user_workspace_index_value",
+        "raw_typed_user_profile_value",
+        "raw_typed_workspace_value",
+        "raw_typed_project_value",
+        "sync_work_item_from_raw",
+        "raw_typed_initiative_value",
+        "sync_work_item_from_raw_store"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_indexes.goose",
+      "sha256": "7fc44710f10579708f7f715bf98e42e7750eb24d55842a59090aa58682ea85af",
+      "bytes": 8361,
+      "symbols": [
+        "raw_typed_user_preferences_value",
+        "sync_user_profile_from_raw",
+        "sync_workspace_from_raw",
+        "sync_project_from_raw",
+        "sync_workspace_collaborator_from_raw",
+        "sync_workspace_collaborator_legacy",
+        "raw_typed_workspace_collaborator_index_value",
+        "sync_workspace_collaborator_index_from_raw",
+        "sync_workspace_collaborator_index_legacy"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_invite_errors.goose",
+      "sha256": "fed8faad8b3a1966fd9fcc21282a5d098bfecb39eff5018ddc0a42f57c73f8a1",
+      "bytes": 6961,
+      "symbols": [
+        "raw_nested_pending_invites_error",
+        "raw_nested_pending_invites_error_actual",
+        "raw_nested_pending_invites_error_validate",
+        "pending_invite_member_error"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_node_indexes.goose",
+      "sha256": "0e2231b36744ae0c4b154db75048962edb51c3e386f094ac72048db57b809cc1",
+      "bytes": 12489,
+      "symbols": [
+        "raw_typed_tree_node_member_index_value",
+        "sync_tree_node_member_index_from_raw",
+        "sync_tree_node_member_index_legacy",
+        "raw_typed_prompt_member_index_value",
+        "sync_prompt_member_index_from_raw",
+        "sync_prompt_member_index_legacy",
+        "raw_typed_prompt_version_index_value",
+        "raw_typed_workspace_node_index_value",
+        "sync_workspace_node_index_legacy",
+        "sync_workspace_node_index_from_raw",
+        "raw_typed_node_value_set_index_value",
+        "raw_typed_value_set_value",
+        "sync_value_set_legacy",
+        "sync_value_set_from_raw"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_prefix_queries.goose",
+      "sha256": "98253e5d7bc97164331128805ac28ed6f6b8b96f95ecceaaf16ddd64c0ca7ba7",
+      "bytes": 12858,
+      "symbols": [
+        "raw_prefix_typed_query"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_prefix_scans.goose",
+      "sha256": "7b258f7a15256fdd27a2168a79b4bdcbc5c5f188afcfab6eec9e9449cd147865",
+      "bytes": 13723,
+      "symbols": [
+        "raw_prefix",
+        "raw_prefix_entries",
+        "raw_prefix_entries_render",
+        "raw_prefix_render",
+        "raw_prefix_entries_render_2",
+        "raw_prefix_read",
+        "prepare_raw_prefix_query",
+        "prepare_raw_legacy_query",
+        "raw_prefix_entries_finish",
+        "append_raw_prefix_entry",
+        "append_raw_prefix_entry_render",
+        "raw_prefix_handle"
+      ],
+      "native_calls": [
+        "pn_crc32_hex",
+        "pn_query_has",
+        "pn_query_value",
+        "pn_utf8_valid"
+      ]
+    },
+    {
+      "path": "admin/raw_records.goose",
+      "sha256": "5466b5ef64d06c182d4d9b8f5a8eb97a477bcd956a6c21a469667f7cdf4fd309",
+      "bytes": 8423,
+      "symbols": [
+        "raw_workspace_collaborator_key_parts",
+        "raw_tree_node_member_key_parts",
+        "raw_typed_tree_node_member_value",
+        "sync_tree_node_member_from_raw",
+        "sync_tree_node_member_legacy",
+        "delete_tree_node_member_legacy",
+        "raw_prompt_member_key_parts",
+        "raw_typed_prompt_member_value",
+        "sync_prompt_member_from_raw",
+        "sync_prompt_member_legacy",
+        "delete_prompt_member_legacy",
+        "raw_typed_workspace_collaborator_value"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_rendering.goose",
+      "sha256": "498d01bfe526990ffb13e4a87c237f854d669532d561c299c09fd8ab155d47f8",
+      "bytes": 8444,
+      "symbols": [
+        "raw_exact_render",
+        "raw_exact_render_2",
+        "raw_exact_render_3",
+        "normalize_raw_record"
+      ],
+      "native_calls": [
+        "pn_crc32_hex",
+        "pn_utf8_valid"
+      ]
+    },
+    {
+      "path": "admin/raw_schema.goose",
+      "sha256": "6250e4e7cfd33842788b40976134a9fb6349a9ef9da82413170e0d83764fc493",
+      "bytes": 14401,
+      "symbols": [
+        "raw_int32",
+        "raw_mcp_recent_call_matches",
+        "raw_string_field_matches",
+        "raw_optional_string_field_matches",
+        "raw_optional_positive_timestamp_matches",
+        "raw_optional_bool_matches",
+        "raw_optional_integer_matches",
+        "raw_required_integer_matches",
+        "raw_required_positive_timestamp_matches",
+        "raw_required_bool_matches",
+        "raw_optional_string_array_matches",
+        "raw_optional_object_matches",
+        "raw_required_string_array_matches",
+        "raw_acceptance_criterion_matches",
+        "raw_activity_entry_matches",
+        "raw_typed_field_problem",
+        "raw_array_element_error",
+        "raw_nested_string_array_error",
+        "raw_nested_string_array_error_kind",
+        "raw_nested_string_array_error_item_line",
+        "raw_nested_string_array_error_key_position",
+        "raw_nested_string_array_error_key_position_validate"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_schema_errors.goose",
+      "sha256": "9b07bf1ba273aa9474e75dff53422b9064c4ad44bce55ec3a7f53149d4cbfef1",
+      "bytes": 16234,
+      "symbols": [
+        "raw_schema_error_detail",
+        "raw_schema_error_detail_handle_6",
+        "raw_schema_error_detail_handle_7",
+        "raw_schema_error_detail_handle_8",
+        "raw_schema_error_detail_handle_9",
+        "raw_schema_error_detail_model",
+        "raw_schema_error_detail_finish",
+        "raw_schema_error_detail_handle_10"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_schema_matches.goose",
+      "sha256": "313d83af226915f1727ad1ecc8e4df6da095191859811276dba6d6049f056c28",
+      "bytes": 15283,
+      "symbols": [
+        "raw_schema_matches_records",
+        "raw_schema_matches",
+        "raw_schema_matches_records_handle",
+        "raw_schema_matches_records_handle_2",
+        "raw_schema_matches_records_handle_3",
+        "raw_schema_matches_records_handle_4",
+        "raw_schema_matches_records_handle_5",
+        "raw_schema_matches_records_handle_6",
+        "raw_schema_matches_records_finish"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_schema_record_errors.goose",
+      "sha256": "7086714586bc1574f17b2960238e25e07cc658c172f0d9e3332d6919d7872b4c",
+      "bytes": 8104,
+      "symbols": [
+        "raw_schema_error_detail_handle",
+        "raw_schema_error_detail_handle_2",
+        "raw_schema_error_detail_handle_3",
+        "raw_schema_error_detail_handle_4",
+        "raw_schema_error_detail_handle_5"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_schema_story_errors.goose",
+      "sha256": "819a4363349aca1c96f2854ab9ad2a7a2f8e0a0dd2c85d6369f00a0e4cc8bb1c",
+      "bytes": 9379,
+      "symbols": [
+        "raw_nested_story_records_error",
+        "raw_nested_story_records_error_actual",
+        "raw_nested_story_records_error_item_line",
+        "raw_nested_story_records_error_item_line_2",
+        "raw_nested_story_records_error_validate",
+        "story_member_error"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_summaries.goose",
+      "sha256": "7cfb804b6104bd8673218101fb730f25ad1d877ef7a461918b75009292b9d64e",
+      "bytes": 8028,
+      "symbols": [
+        "raw_allowlist",
+        "raw_summary",
+        "raw_allowlist_handle",
+        "raw_allowlist_handle_2",
+        "raw_summary_finish",
+        "raw_allowlist_handle_3"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_sync_dispatch.goose",
+      "sha256": "f43e01314bfbd55ae41b239db55e221ba913f8a4c9fbd2fed25a7d227e7c96b4",
+      "bytes": 3960,
+      "symbols": [
+        "sync_raw_derived_record",
+        "sync_raw_derived_record_handle"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_typed_lookup.goose",
+      "sha256": "40eb4a76be0ce0984de7057932c17e1db55dda61470817a4918f7147b3c179c5",
+      "bytes": 2819,
+      "symbols": [
+        "read_raw_typed_value",
+        "read_raw_member_value"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_update_responses.goose",
+      "sha256": "c3d73c7d1b220112717555f6789d46870c3f936834c15024c867a563c00e2483",
+      "bytes": 10693,
+      "symbols": [
+        "raw_exact_update_fp_value_render",
+        "raw_exact_update_fp_value_render_2",
+        "raw_exact_update_fp_value_render_3",
+        "raw_exact_update_fp_value_render_4",
+        "raw_exact_update_fp_value_mutation_status",
+        "raw_exact_update_fp_value_finish_2"
+      ],
+      "native_calls": [
+        "pn_crc32_hex"
+      ]
+    },
+    {
+      "path": "admin/raw_updates.goose",
+      "sha256": "8c236333d680d7329a784024f0820cc39e1f94a61b9bb6da3f2da897c6828340",
+      "bytes": 17548,
+      "symbols": [
+        "raw_bind_value",
+        "raw_internal_failure",
+        "raw_exact_update",
+        "raw_exact_update_fp_value",
+        "raw_exact_update_parse",
+        "raw_write_comparison",
+        "raw_exact_update_fp_value_handle",
+        "raw_exact_update_fp_value_handle_2",
+        "raw_exact_update_fp_value_store",
+        "raw_exact_update_fp_value_finish",
+        "raw_exact_update_handle",
+        "write_raw_exact_record"
+      ],
+      "native_calls": [
+        "pn_crc32_hex",
+        "pn_request_body",
+        "pn_utf8_valid"
+      ]
+    },
+    {
+      "path": "admin/raw_value_set_indexes.goose",
+      "sha256": "c5a160f92d7a3f92b158432da0f8a0f6a63509abddaeed8e688776bf1cdc7ae4",
+      "bytes": 7486,
+      "symbols": [
+        "value_set_raw_record_readable",
+        "value_set_record_readable",
+        "delete_value_set_legacy",
+        "node_value_set_index_readable",
+        "sync_node_value_set_index_legacy",
+        "sync_node_value_set_index_from_raw",
+        "raw_typed_node_variables_value",
+        "sync_node_variables_legacy",
+        "sync_node_variables_from_raw",
+        "sync_prompt_version_index_from_raw",
+        "sync_prompt_version_index_legacy"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/raw_work_item_records.goose",
+      "sha256": "b0eb0013e12eb58127f055cdbd8d2e5d997d5641667327d8dad83a51f533c9bc",
+      "bytes": 9771,
+      "symbols": [
+        "raw_typed_epic_value",
+        "raw_typed_story_value",
+        "raw_typed_tree_node_value",
+        "sync_tree_node_legacy",
+        "sync_tree_node_from_raw",
+        "raw_typed_prompt_content_value",
+        "sync_prompt_content_legacy",
+        "sync_prompt_content_from_raw",
+        "raw_typed_story_value_render"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "admin/request_inputs.goose",
+      "sha256": "78e5da1cc8664ae75d5902beb485501f23c4454897f7c3be31a4c2f2ced85d7c",
+      "bytes": 1022,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "admin/tree_node_helpers.goose",
+      "sha256": "2e039cbd07b4cc10d5f81b1bcd5bbd87be750fd0ad85723c31678cf42bc94598",
+      "bytes": 16379,
+      "symbols": [
+        "edit_tree_node",
+        "edit_tree_node_patch_storage",
+        "edit_tree_node_patch_storage_render",
+        "edit_tree_node_patch_storage_node_id",
+        "edit_tree_node_patch_storage_handle",
+        "edit_tree_node_patch_storage_node_id_store",
+        "edit_tree_node_patch_storage_node_id_render"
+      ],
+      "native_calls": [
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "admin/user_directory.goose",
+      "sha256": "c5428e73337980d4684ad367174f8417ebcea6883523285d776751145a3b04e2",
+      "bytes": 9669,
+      "symbols": [
+        "make_cursor",
+        "read_cursor",
+        "search_contains",
+        "user_directory",
+        "user_directory_result_count",
+        "user_directory_result_count_render",
+        "user_directory_result_count_render_2",
+        "append_directory_user",
+        "user_directory_render"
+      ],
+      "native_calls": [
+        "pn_query_has",
+        "pn_query_value"
+      ]
+    },
+    {
+      "path": "admin/user_edits.goose",
+      "sha256": "c0497d1cc8ae6aeb7d64ab429db9d3172f8e3d831e61d9fc6940c85ce5f2af56",
+      "bytes": 12027,
+      "symbols": [
+        "edit_user",
+        "edit_user_bio",
+        "edit_user_bio_store",
+        "edit_user_bio_render",
+        "edit_user_bio_accent"
+      ],
+      "native_calls": [
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "admin/user_workspaces.goose",
+      "sha256": "7de6353be7def44d9297050c76a32c295a049d31c12ad3e50f3e9c0088edf26c",
+      "bytes": 4160,
+      "symbols": [
+        "user_workspaces",
+        "user_workspaces_handle"
+      ],
+      "native_calls": [
+        "pn_query_value"
+      ]
+    },
+    {
+      "path": "admin/users.goose",
+      "sha256": "a065efeee6bad5c024ee85cbe0490bcc5fc5de4a8ba370f5b053f16c95fcb839",
+      "bytes": 11343,
+      "symbols": [
+        "user_fingerprint",
+        "append_user",
+        "read_user_by_email",
+        "initials_for",
+        "read_user_by_email_render",
+        "read_user_by_email_render_2",
+        "read_user_by_email_actual_id",
+        "read_user_by_email_render_3"
+      ],
+      "native_calls": [
+        "pn_crc32_hex"
+      ]
+    },
+    {
+      "path": "admin/value_set_helpers.goose",
+      "sha256": "90e96d72f4147143a75632256e59f9f8ff834aac2b832ad2b2588563b964430e",
+      "bytes": 5746,
+      "symbols": [
+        "value_set_fingerprint",
+        "append_value_set",
+        "normalize_string_values",
+        "node_value_sets",
+        "node_value_sets_handle"
+      ],
+      "native_calls": [
+        "pn_crc32_hex",
+        "pn_query_value"
+      ]
+    },
+    {
+      "path": "admin/workspace_edits.goose",
+      "sha256": "50153f8f9775dbb2bd75371dcaa26eaba5924885ecd5f6a6bac2175af482bf8e",
+      "bytes": 12273,
+      "symbols": [
+        "edit_workspace",
+        "edit_workspace_owner",
+        "edit_workspace_owner_render",
+        "edit_workspace_owner_render_2",
+        "edit_workspace_owner_render_3",
+        "edit_workspace_owner_personal",
+        "edit_workspace_owner_handle"
+      ],
+      "native_calls": [
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "core/auth.goose",
+      "sha256": "6692725275ee031b7409c23dd3dc53db715e8dbbd1f8ede31589d3cd8880171b",
+      "bytes": 1103,
+      "symbols": [
+        "bearer_token",
+        "session_user_id",
+        "auth_error_message"
+      ],
+      "native_calls": [
+        "pn_request_header_raw"
+      ]
+    },
+    {
+      "path": "core/common.goose",
+      "sha256": "e341203b4ad6e9c9272ee9da31bf3e1de848d2468e7ec1cad821564d1e8cba3e",
+      "bytes": 4823,
+      "symbols": [
+        "now_ms",
+        "now_sec",
+        "now_hour",
+        "ns_to_ms",
+        "ns_to_sec",
+        "ns_to_hour",
+        "json_error",
+        "json_null",
+        "text_contains",
+        "env_or_nonblank",
+        "append_url_component",
+        "append_query_pair",
+        "env_or",
+        "status_reason",
+        "make_uuid"
+      ],
+      "native_calls": [
+        "pn_uuid_v4"
+      ]
+    },
+    {
+      "path": "core/ffi.goose",
+      "sha256": "c3559ca520d406b9c762fe59607ecfd85ddc325ec2a543c0ce677d7d364ef505",
+      "bytes": 2431,
+      "symbols": [
+        "pn_accept",
+        "pn_close",
+        "pn_crc32_hex",
+        "pn_http_keep_alive",
+        "pn_http_read",
+        "pn_http_write",
+        "pn_http_write_response",
+        "pn_install_shutdown_handlers",
+        "pn_live_token",
+        "pn_mcp_http_get",
+        "pn_method_path",
+        "pn_next_month_reset",
+        "pn_normalize_mcp_url",
+        "pn_path_segment",
+        "pn_portal_has_url_config",
+        "pn_portal_proxy",
+        "pn_portal_query_json",
+        "pn_portal_static",
+        "pn_query_has",
+        "pn_query_value",
+        "pn_request_body",
+        "pn_request_header",
+        "pn_request_header_raw",
+        "pn_request_id",
+        "pn_session_token",
+        "pn_shutdown_requested",
+        "pn_tcp_listen",
+        "pn_unix_rfc3339",
+        "pn_user_initials",
+        "pn_utf8_valid",
+        "pn_uuid_v4",
+        "pn_zip_add",
+        "pn_zip_finish",
+        "pn_zip_reset"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "core/http.goose",
+      "sha256": "88ae282ce74ed2bbf21e96059d04a25dce61dc05a42dabe12890d281709fc4bd",
+      "bytes": 2425,
+      "symbols": [
+        "response",
+        "response_plain",
+        "admin_http_response",
+        "zip_response",
+        "redirect_response"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "db/late_migrations.goose",
+      "sha256": "b956b254bac56a0d1d70e19cf0e592032a5485b1152f2795dc3e2899292da247",
+      "bytes": 3840,
+      "symbols": [
+        "apply_late_schema_migrations",
+        "apply_late_schema_migrations_validate"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "db/migration_indexes.goose",
+      "sha256": "cd55202494079465ef7c4655a56944edc905ff9020c78d03e415161483a79424",
+      "bytes": 18105,
+      "symbols": [
+        "migrate_database_workspace_owner_member_applied",
+        "migrate_database_read_2",
+        "migrate_database_validate_4",
+        "migrate_database_read_3",
+        "migrate_database_validate_5",
+        "migrate_database_idea_link_duplicates_applied",
+        "migrate_database_workspace_owner_member_applied_validate",
+        "migrate_database_workspace_owner_member_applied_read",
+        "migrate_database_read_4",
+        "migrate_database_prompt_member_index_applied"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "db/migration_sql.goose",
+      "sha256": "6a0143e7672e4089c478f1f0b6420208e0be00b5f136a62b7dc73a35f785b652",
+      "bytes": 2169,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "db/migrations.goose",
+      "sha256": "4e4e5c83d81b2dcffbad19c54103ceb45135ae1eab094f4c26dbfa8df8cf2c74",
+      "bytes": 7657,
+      "symbols": [
+        "migrate_database",
+        "migrate_database_validate",
+        "migrate_database_validate_2",
+        "migrate_database_read",
+        "migrate_database_validate_3"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "db/reset.goose",
+      "sha256": "043f56f6cc31407e7256394260c0cde51f499b57b162590e2888942d9ec4d042",
+      "bytes": 5893,
+      "symbols": [
+        "reset_test_database",
+        "reset_test_database_store",
+        "reset_test_database_store_2",
+        "reset_test_database_store_3"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "flagged/dispatch.goose",
+      "sha256": "f46db2ad465e53b4f04e94c11c686d716b63591c9a13894a3332733f5d73f91c",
+      "bytes": 3707,
+      "symbols": [
+        "dispatch",
+        "dispatch_get"
+      ],
+      "native_calls": [
+        "pn_path_segment",
+        "pn_query_value",
+        "pn_request_header"
+      ]
+    },
+    {
+      "path": "flagged/flagged.goose",
+      "sha256": "812319173b625997d7b3c990f4c1c5a28a58adefe3af490d77e35f5accf79bae",
+      "bytes": 10662,
+      "symbols": [
+        "next_status_order",
+        "append_flagged",
+        "read_flagged",
+        "purge_expired",
+        "list_flagged",
+        "flagged_count",
+        "read_body",
+        "list_flagged_render",
+        "append_flagged_row",
+        "append_flagged_row_handle"
+      ],
+      "native_calls": [
+        "pn_query_value",
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "flagged/flagged_mutations.goose",
+      "sha256": "f6eb707a155bc746c2e0403f5cee99a5cf588b06c4b8eb8071e327f4aff9f157",
+      "bytes": 16249,
+      "symbols": [
+        "create_flagged",
+        "create_flagged_for_user",
+        "create_flagged_as_user",
+        "update_flagged",
+        "delete_forbidden",
+        "create_flagged_title",
+        "create_flagged_as_user_source",
+        "update_flagged_title",
+        "update_flagged_title_old_trashed",
+        "update_flagged_title_render"
+      ],
+      "native_calls": [
+        "pn_request_header"
+      ]
+    },
+    {
+      "path": "flagged/request_inputs.goose",
+      "sha256": "7ae79f7effd6c18a45269963303c7cc8b2a32b3326fab94b0a62998687a57864",
+      "bytes": 393,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "http_posix.c",
+      "sha256": "37ebd3dbd83d506e59f1ddda48aeed732cb8444325a82148698efb09fe93566f",
+      "bytes": 96727,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "ideas/idea_lifecycle.goose",
+      "sha256": "9b74a41426ca5318314583b4a2a0502642e26b636d5b7f489bc1f997292d0ff1",
+      "bytes": 5308,
+      "symbols": [
+        "change_lifecycle",
+        "change_lifecycle_parse",
+        "change_lifecycle_lifecycleoperation"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "ideas/idea_lists.goose",
+      "sha256": "cd983a931085b9c18ee2bf81233f8cee0aabbaa5d5f6968f297212eda1d8394b",
+      "bytes": 8971,
+      "symbols": [
+        "string_array_index_model_error",
+        "idea_index_model_error",
+        "list_ideas",
+        "string_array_index_model_error_first_problem",
+        "list_ideas_render",
+        "string_array_index_model_error_first_problem_handle"
+      ],
+      "native_calls": [
+        "pn_query_value"
+      ]
+    },
+    {
+      "path": "ideas/idea_promotion.goose",
+      "sha256": "408ef31a8c5a9f1b8d7cb4f52d8fd22c58a8d00dd269a414c1ae14f33edb06aa",
+      "bytes": 16454,
+      "symbols": [
+        "promote",
+        "promote_target_id",
+        "promote_target_id_target_type",
+        "promote_target_id_target_type_render",
+        "promote_target_id_store",
+        "finish_promotion",
+        "promote_target_id_render",
+        "promote_target_id_render_2",
+        "promote_target_id_handle"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "ideas/ideas.goose",
+      "sha256": "c780cf72e7eff294b4752410826ce8e5465f3b33d5e695496414f5619d46abd2",
+      "bytes": 12654,
+      "symbols": [
+        "request_body",
+        "read_links",
+        "append_idea",
+        "idea_storage_record_readable",
+        "idea_record_storage_readable",
+        "append_admin_idea_storage_record",
+        "idea_response",
+        "sync_idea_legacy",
+        "sync_admin_idea_legacy",
+        "append_list_item",
+        "link_count",
+        "idea_member",
+        "mutate_workspace_idea_index"
+      ],
+      "native_calls": [
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "ideas/json_errors.goose",
+      "sha256": "fa71f7c02e79e9366372e657285e757865a799c81c744f2e3c1cf32acc3ea407",
+      "bytes": 13070,
+      "symbols": [
+        "json_error_byte",
+        "json_line_column",
+        "json_char_width",
+        "unexpected_char_message",
+        "json_token_at",
+        "unexpected_token_message",
+        "literal_mismatch",
+        "crystal_bad_number_position",
+        "invalid_json_string_byte",
+        "crystal_json_parse_message",
+        "invalid_json",
+        "json_object_argument_error",
+        "json_object_argument_direct_error",
+        "json_token_at_handle",
+        "crystal_json_parse_message_validate"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "ideas/lifecycle.goose",
+      "sha256": "3cb1fd36f6e56652b8732b2b2ad766498652543db45adfcb22b0d8b9209928c0",
+      "bytes": 12002,
+      "symbols": [
+        "mutate_link",
+        "list_reverse",
+        "delete_idea",
+        "mutate_link_store",
+        "mutate_link_parse",
+        "list_reverse_read",
+        "list_reverse_label"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "ideas/lifecycle_dispatch.goose",
+      "sha256": "3ced687cbd2ce8391a6208e4700bf592ff6f2eeae1f9150a88136372328251ce",
+      "bytes": 10573,
+      "symbols": [
+        "dispatch",
+        "dispatch_get",
+        "dispatch_validate",
+        "dispatch_reverse",
+        "dispatch_get_post",
+        "dispatch_get_get",
+        "dispatch_get_post_handle"
+      ],
+      "native_calls": [
+        "pn_path_segment",
+        "pn_query_value",
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "ideas/request_inputs.goose",
+      "sha256": "97c1ee0af9a2f5d60d13f0a90eae3ad92afd224381cb83ceb1417c1a4bd1ce83",
+      "bytes": 795,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "ideas/reverse_indexes.goose",
+      "sha256": "df879da478d7284cb65f6017e50bc42ad873d836db372ffee064d449983f8979",
+      "bytes": 14945,
+      "symbols": [
+        "reverse_index_prefix",
+        "mutate_reverse_index",
+        "remove_idea_from_reverse_indexes",
+        "insert_links",
+        "ensure_link",
+        "valid_string_array",
+        "replace_links",
+        "create_idea",
+        "update_idea",
+        "create_idea_store",
+        "update_idea_summary"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "main.build",
+      "sha256": "f2d58c523964cd58bc954a08cd8cc83e95732314a619f1dafe59b31c4fb6311b",
+      "bytes": 75,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "main.goose",
+      "sha256": "d73ac239d7c21ef99f3d1b7d30ccc284d5cf11a9b92469206862c7b8da37a362",
+      "bytes": 2064,
+      "symbols": [
+        "main"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "mcp_protocol/dispatch.goose",
+      "sha256": "7839f4b3c4cb5cf49f2048dc80b3dca5867a7d8614a10b0ab0176c3d103fda62",
+      "bytes": 3471,
+      "symbols": [
+        "dispatch",
+        "dispatch_auth_status",
+        "dispatch_authenticated_route"
+      ],
+      "native_calls": [
+        "pn_path_segment",
+        "pn_query_value",
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "mcp_protocol/json_parser.goose",
+      "sha256": "f4f09e1091739c6aab24cb9a92bf7c1ad33bc12410efc83c6867152e40ce487f",
+      "bytes": 8528,
+      "symbols": [
+        "skip_json_space",
+        "json_string_end",
+        "json_value_end",
+        "parser_value_end",
+        "object_field_positions",
+        "next_object_member_positions",
+        "next_object_field_positions",
+        "json_node_type",
+        "json_raw_type",
+        "json_node_is_string",
+        "json_node_is_null",
+        "json_member_last"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "mcp_protocol/mcp_protocol.goose",
+      "sha256": "7688e8608d1c622d25b6337ee4e773bd09861315f5944eb84910757d6808cd43",
+      "bytes": 13528,
+      "symbols": [
+        "add_workspace_node_index",
+        "remove_workspace_node_index",
+        "api_user",
+        "log_call",
+        "sync_mcp_recent_calls_legacy",
+        "array_count",
+        "array_at",
+        "comma_index",
+        "folder_path",
+        "append_variable_object",
+        "lookup_variable",
+        "log_call_parse"
+      ],
+      "native_calls": [
+        "pn_method_path",
+        "pn_query_value",
+        "pn_request_header_raw",
+        "pn_unix_rfc3339"
+      ]
+    },
+    {
+      "path": "mcp_protocol/model_errors.goose",
+      "sha256": "32542ec70cfa4c41381e3c563868177b4bfeca804b09481d0f6b31ce2dc525c6",
+      "bytes": 4503,
+      "symbols": [
+        "has_eof_token",
+        "mcp_json_parse_message",
+        "model_field_occurrence_error",
+        "model_field_error",
+        "model_root_error"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "mcp_protocol/prompt_details.goose",
+      "sha256": "e8d2cba357957e0afa50813ef94d98425bc5810243f5efe7764ebc0d0cdbec19",
+      "bytes": 5085,
+      "symbols": [
+        "context_nodes",
+        "details",
+        "details_render",
+        "append_detail_value_set"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "mcp_protocol/prompt_execution.goose",
+      "sha256": "bc75d3793cb5e09d071535cb913a7ec91bb579c39ea88e5a5a509d9c3c954d22",
+      "bytes": 4921,
+      "symbols": [
+        "run_prompt_model_error",
+        "run_prompt",
+        "run_prompt_handle"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "mcp_protocol/prompt_lists.goose",
+      "sha256": "e54cc97bb73184f180834fc94e04544238d876f085decf1c0abe413523ad5f59",
+      "bytes": 3752,
+      "symbols": [
+        "list_prompts",
+        "list_prompts_render"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "mcp_protocol/recent_calls_errors.goose",
+      "sha256": "6a76753aefe7a469ed9009b11ef22c1f08704865f74188ed1a8720172b23bf5b",
+      "bytes": 7474,
+      "symbols": [
+        "recent_calls_record_error",
+        "recent_calls_record_error_count",
+        "recent_calls_record_error_count_position",
+        "recent_call_fields_error"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "mcp_protocol/request_inputs.goose",
+      "sha256": "25594b9987a592931bb8c33300cf17458c46719d0820ac864de98c2a9f1ec6c0",
+      "bytes": 184,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "mcp_protocol/request_models.goose",
+      "sha256": "5b03ee60b44c8ea0ce5c36573e13391e9508d1db600c6b2d501b36a792205fc1",
+      "bytes": 14133,
+      "symbols": [
+        "variables_model_error",
+        "create_prompt_model_error",
+        "create_prompt",
+        "delete_prompt",
+        "create_prompt_read",
+        "delete_prompt_validate",
+        "create_prompt_store",
+        "create_prompt_model_error_handle",
+        "create_prompt_read_2"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "mcp_settings/integration_routes.goose",
+      "sha256": "fbe0b8229f9c79aa086a55ad7b3c8420bf5df3e2c4dcaf504fa3f579b2ad5463",
+      "bytes": 13034,
+      "symbols": [
+        "list_integrations",
+        "create_integration",
+        "delete_integration",
+        "test_connection",
+        "dispatch",
+        "create_integration_read",
+        "test_connection_render",
+        "dispatch_get"
+      ],
+      "native_calls": [
+        "pn_mcp_http_get",
+        "pn_normalize_mcp_url",
+        "pn_path_segment"
+      ]
+    },
+    {
+      "path": "mcp_settings/mcp_settings.goose",
+      "sha256": "25908b1fffa489d11a85c13a3f324dfcc6ca1fc48ed512a0d5c3d4b95be30741",
+      "bytes": 12876,
+      "symbols": [
+        "read_body",
+        "array_count",
+        "array_at",
+        "token_response",
+        "calls_response",
+        "append_integration",
+        "mcp_integration_index_key",
+        "mcp_integration_index_has",
+        "sync_mcp_integration_index",
+        "upstream_status_message",
+        "calls_response_render",
+        "append_raw_recent_calls",
+        "sync_mcp_integration_index_parse"
+      ],
+      "native_calls": [
+        "pn_live_token",
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "mcp_settings/usage_responses.goose",
+      "sha256": "e7e6f06badc08bff0d3bf3a31d777312cf144d1d5009a7e1a871790009299ad5",
+      "bytes": 8767,
+      "symbols": [
+        "usage_response",
+        "hourly_usage_record_error",
+        "hourly_response",
+        "hourly_response_render"
+      ],
+      "native_calls": [
+        "pn_next_month_reset"
+      ]
+    },
+    {
+      "path": "nodes/node_duplication.goose",
+      "sha256": "dec66602c059cd9e1c2059405d665b735ddb33c972573666a0b43a60d5399293",
+      "bytes": 10451,
+      "symbols": [
+        "mapped_node_id",
+        "duplicate_node_response",
+        "duplicate_node_response_finish",
+        "duplicate_node_response_root_storage",
+        "duplicate_node_response_root_storage_parse",
+        "duplicate_node_response_root_storage_handle"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "nodes/node_updates.goose",
+      "sha256": "84ddb3f6e5ac4c7d2d95b2e41fa740a287192a070d37f910841268d20e602779",
+      "bytes": 7606,
+      "symbols": [
+        "update_node_response",
+        "update_node_response_read",
+        "update_node_response_effective_name",
+        "update_node_response_read_2"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "nodes/nodes.goose",
+      "sha256": "9548e5c9113cd3de95e526934364a2aef67f3bbee2d2384e8c84e8a1e7f7b591",
+      "bytes": 13455,
+      "symbols": [
+        "append_node_response",
+        "create_node_response",
+        "delete_node_response",
+        "node_access_status",
+        "variable_array_validation_error",
+        "encode_variable_array",
+        "create_node_response_workspace_id",
+        "create_node_response_workspace_id_store"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "nodes/request_inputs.goose",
+      "sha256": "a793ec0b1ebbadd663571322c5a4ec57ec0be5772349f421fe6d263b6c9dbb5d",
+      "bytes": 541,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "nodes/sharing_and_variables.goose",
+      "sha256": "db8af99945e8d235d5b4491d8d81654b69f72ec8be676734a1f246513b6b89ac",
+      "bytes": 18806,
+      "symbols": [
+        "append_node_share_collaborator",
+        "permission_rank_value",
+        "node_share_response",
+        "node_collaborator_response",
+        "node_variables_response",
+        "node_share_response_render",
+        "node_collaborator_response_read",
+        "node_collaborator_response_render",
+        "node_share_response_uid",
+        "node_collaborator_response_read_2",
+        "node_collaborator_response_read_3",
+        "node_collaborator_response_handle"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "nodes/value_sets.goose",
+      "sha256": "54ac6cc07472888c749852895de8d970f9d127e1dad0396a8422a982ccc86927",
+      "bytes": 12260,
+      "symbols": [
+        "encode_value_map",
+        "value_map_cast_error",
+        "is_json_object",
+        "append_value_set",
+        "value_sets_response",
+        "value_sets_response_read",
+        "value_sets_response_read_2",
+        "value_sets_response_store",
+        "value_sets_response_store_2"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "portal/portal.goose",
+      "sha256": "4610031b772c77fd685fafcf924953e94f68276da73c0b1664cd66d4da8b2c12",
+      "bytes": 13605,
+      "symbols": [
+        "uppercase",
+        "is_lowercase_environment",
+        "reason",
+        "http_response",
+        "proxy_error_response",
+        "log_audit",
+        "proxy",
+        "run",
+        "log_audit_error_code",
+        "proxy_response",
+        "log_audit_error_code_render",
+        "log_audit_error_code_request_body"
+      ],
+      "native_calls": [
+        "pn_accept",
+        "pn_close",
+        "pn_http_read",
+        "pn_http_write",
+        "pn_install_shutdown_handlers",
+        "pn_method_path",
+        "pn_portal_has_url_config",
+        "pn_portal_proxy",
+        "pn_portal_query_json",
+        "pn_portal_static",
+        "pn_query_has",
+        "pn_query_value",
+        "pn_request_body",
+        "pn_request_header",
+        "pn_shutdown_requested",
+        "pn_tcp_listen"
+      ]
+    },
+    {
+      "path": "portal/request_inputs.goose",
+      "sha256": "f275158a0a9ff1caeab36106ad08f023a1fb9d09501e8f48a3bd093fccf1d9fa",
+      "bytes": 363,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "projects/epic_handlers.goose",
+      "sha256": "d8b13146aee6b12fa4b3a3d4fd1c4464addae516f4c2c54687f5c277f065ba32",
+      "bytes": 11732,
+      "symbols": [
+        "epic_response",
+        "epic_response_patch_doc",
+        "epic_response_patch_doc_iid",
+        "epic_response_patch_doc_iid_store",
+        "epic_response_patch_doc_iid_workitemoperation",
+        "epic_response_patch_doc_iid_workitemoperation_store"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "projects/epic_lists.goose",
+      "sha256": "82d3dbcd76b9cdb5981cd964e744e341ca824a0febe6d0a3f6d3a305334d5fa5",
+      "bytes": 8948,
+      "symbols": [
+        "epic_response_workitemoperation",
+        "epic_response_workitemoperation_render",
+        "epic_response_workitemoperation_store",
+        "epic_response_workitemoperation_parse",
+        "epic_response_workitemoperation_eid"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "projects/epics.goose",
+      "sha256": "a47e70269b47a7811883a49e5986918203dc4fb564762cb1838c1b38ecf688b8",
+      "bytes": 5198,
+      "symbols": [
+        "project_agent_completion_error",
+        "append_epic_record",
+        "epic_derived_status",
+        "append_epic_response",
+        "delete_epic_stories"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "projects/initiative_handlers.goose",
+      "sha256": "9d8a58fa6235096b6e6c5cdb0f8333665fc042692c158225f983a92104a9a749",
+      "bytes": 15080,
+      "symbols": [
+        "initiative_response",
+        "initiative_response_workitemoperation",
+        "initiative_response_workitemoperation_2",
+        "initiative_response_workitemoperation_name",
+        "initiative_response_workitemoperation_2_parse",
+        "initiative_response_workitemoperation_name_store",
+        "initiative_response_workitemoperation_name_next_name",
+        "initiative_response_workitemoperation_name_store_2"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "projects/project_handlers.goose",
+      "sha256": "9af801a121332199abfd6627bffae1e50aa088420c4234e9bcd3d0b75be7d2bc",
+      "bytes": 16708,
+      "symbols": [
+        "append_project",
+        "delete_project_initiatives",
+        "delete_project_epics",
+        "project_response",
+        "append_initiative",
+        "project_response_workitemoperation",
+        "project_response_workitemoperation_2",
+        "project_response_workitemoperation_workitemoperation",
+        "project_response_workitemoperation_workitemoperation_workitemoperation",
+        "project_response_workitemoperation_workitemoperation_next_name",
+        "project_response_render",
+        "project_response_workitemoperation_2_parse"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "projects/projects.goose",
+      "sha256": "6171122f20c7401afdba829bcd9d88d51b1ceb68a7adebfc4da45430d5e53a1a",
+      "bytes": 10907,
+      "symbols": [
+        "auth_error",
+        "auth_error_response",
+        "request_error",
+        "parse_body",
+        "malformed_body",
+        "object_member_last",
+        "status_success",
+        "validate_string_array_index",
+        "validate_work_item_json",
+        "validate_retained_work_item",
+        "index_array_count",
+        "index_array_at",
+        "validate_project_count_indexes",
+        "validate_epic_story_indexes",
+        "mutate_index"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "projects/request_inputs.goose",
+      "sha256": "4f5eb0e0c47db329a44fb149cf111781f9d57332f3c1aa380f4cfa7747b8cb71",
+      "bytes": 688,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "projects/stories.goose",
+      "sha256": "6e74dbfcc3e60001ed43f8e0c046c18ed3d6f3f58863884a943cb0051d76abdb",
+      "bytes": 9543,
+      "symbols": [
+        "story_by_id",
+        "stories_by_parent",
+        "list_stories_response",
+        "stories_for_epic",
+        "create_story_response",
+        "story_by_id_state",
+        "create_story_response_id",
+        "stories_by_parent_parse"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "projects/story_actions.goose",
+      "sha256": "a89bdac5bf64d04baf020901944a6bc370cb56759107d86fa2ce19673acb264a",
+      "bytes": 12211,
+      "symbols": [
+        "story_response",
+        "story_response_storyoperation",
+        "story_response_storyoperation_2",
+        "story_response_storyoperation_3",
+        "story_response_storyoperation_2_retained_status",
+        "story_response_storyoperation_2_retained_status_store"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "projects/story_mutations.goose",
+      "sha256": "b2f69f61a9eb4bb422a2383d022463492922a6cf89417c61c3ebba7daa397c86",
+      "bytes": 8257,
+      "symbols": [
+        "story_response_storyoperation_finish",
+        "story_response_storyoperation_criteria",
+        "story_response_storyoperation_input",
+        "story_response_storyoperation_input_2",
+        "story_response_storyoperation_input_3"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "projects/work_item_records.goose",
+      "sha256": "78ec69de190484620d36e2c40db0b83e74b3fdfb70ec2eb341827dd7c497f936",
+      "bytes": 7332,
+      "symbols": [
+        "project_record_value",
+        "store_project_record",
+        "initiative_record_value",
+        "store_initiative_record",
+        "sync_initiative_record_legacy",
+        "epic_record_value",
+        "store_epic_record",
+        "sync_epic_record_legacy",
+        "sync_project_record_legacy"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "prompts/collaborators.goose",
+      "sha256": "0b17334a6ba3f2cb86022a3079ce2833356689b2d3410ecd7172cc6200dfea90",
+      "bytes": 13996,
+      "symbols": [
+        "prompt_collaborators_response",
+        "prompt_collaborators_response_read",
+        "prompt_collaborators_response_read_2",
+        "prompt_collaborators_response_read_3",
+        "prompt_collaborators_response_read_4",
+        "prompt_collaborators_response_read_5",
+        "prompt_collaborators_response_requester",
+        "prompt_collaborators_response_requester_auth_status"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "prompts/prompt_versions.goose",
+      "sha256": "6971c29c2f1917a6be612e14c6144d47c9cd994f54aece0ab884247f871ec859",
+      "bytes": 4918,
+      "symbols": [
+        "list_prompt_versions_response",
+        "prompt_version_detail_response",
+        "restore_prompt_version_response"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "prompts/prompts.goose",
+      "sha256": "6ed6de9f81472c8ff916a75b6d745547e4280a5114ae1c613184156a99e2a294",
+      "bytes": 15182,
+      "symbols": [
+        "authorize_prompt",
+        "read_prompt_fields",
+        "append_prompt_response",
+        "get_prompt_response",
+        "write_prompt_response",
+        "update_prompt_response",
+        "update_prompt_storage_response",
+        "append_prompt_collaborator",
+        "prompt_share_response",
+        "prompt_share_response_read",
+        "prompt_share_response_uid"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "prompts/request_inputs.goose",
+      "sha256": "4875cd1beebe0898fce3f749941492807a52a9797fd75a9c5009f4e880f10a1f",
+      "bytes": 275,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "server/fallback_routes.goose",
+      "sha256": "3fb04f67f9bbd65e312685ae7aadda50cf7af42426a4f39572e9ad1d14610775",
+      "bytes": 3937,
+      "symbols": [
+        "route_database_health",
+        "route_fallback",
+        "route_fallback_mcp_protocol_matched"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "server/node_routes.goose",
+      "sha256": "fe6d934a86f74d8476cc3c41a074c51f656372013f903fca029974617a0ea1c7",
+      "bytes": 9865,
+      "symbols": [
+        "route_nodes",
+        "route_nodes_put",
+        "route_nodes_patch",
+        "route_nodes_get",
+        "route_nodes_put_delete"
+      ],
+      "native_calls": [
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "server/project_routes.goose",
+      "sha256": "117f03ce7681d5fde77cef23d65bb23d723d3387700057d08d87fbfc8a4a0d37",
+      "bytes": 9195,
+      "symbols": [
+        "route_projects",
+        "route_projects_post",
+        "route_projects_get",
+        "route_projects_post_get"
+      ],
+      "native_calls": [
+        "pn_query_value",
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "server/project_work_item_routes.goose",
+      "sha256": "64b79e34eac372aa10ee20b998f05e2eda89bab7bfd432783c5b34ac2dd0e2c3",
+      "bytes": 13735,
+      "symbols": [
+        "route_project_work_items",
+        "route_project_work_items_patch",
+        "route_project_work_items_get",
+        "route_project_work_items_delete",
+        "route_project_work_items_patch_delete",
+        "route_project_work_items_patch_post",
+        "route_project_work_items_get_patch",
+        "route_project_work_items_patch_delete_post"
+      ],
+      "native_calls": [
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "server/prompt_routes.goose",
+      "sha256": "0ce3a30597ef9f9f71123135e915e6a9ad4781e719fe1cfe7c2cdc26fca61510",
+      "bytes": 7265,
+      "symbols": [
+        "route_prompts",
+        "route_prompts_get",
+        "route_prompts_get_2",
+        "route_prompts_get_patch"
+      ],
+      "native_calls": [
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "server/routes.goose",
+      "sha256": "33ae934258d2aeb4eada16ee1f643ee29aa7e3951f24dd762964c97031a37e62",
+      "bytes": 5205,
+      "symbols": [
+        "handle_request",
+        "route_families",
+        "handle_request_options"
+      ],
+      "native_calls": [
+        "pn_method_path",
+        "pn_path_segment"
+      ]
+    },
+    {
+      "path": "server/server.goose",
+      "sha256": "8c4379afcf71c47319868ac603c92299b270f593899d8daa89a56bff8b62182a",
+      "bytes": 2236,
+      "symbols": [
+        "run",
+        "run_handle"
+      ],
+      "native_calls": [
+        "pn_accept",
+        "pn_close",
+        "pn_http_keep_alive",
+        "pn_http_read",
+        "pn_http_write",
+        "pn_http_write_response",
+        "pn_install_shutdown_handlers",
+        "pn_shutdown_requested",
+        "pn_tcp_listen"
+      ]
+    },
+    {
+      "path": "server/user_routes.goose",
+      "sha256": "1523e53b8ac14aa85fa669632cd651f665e1b0a9c5c1fa1c1fb66421fdbb1003",
+      "bytes": 6392,
+      "symbols": [
+        "route_user",
+        "route_user_get",
+        "route_user_post",
+        "route_user_get_post"
+      ],
+      "native_calls": [
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "server/workspace_routes.goose",
+      "sha256": "dec41d1e56c397cc22df1f1a24a0f4e2591e31b85dedabdcbfcb3e7ff9c88502",
+      "bytes": 6278,
+      "symbols": [
+        "route_workspaces",
+        "route_workspaces_get",
+        "route_workspaces_patch",
+        "route_workspaces_get_post"
+      ],
+      "native_calls": [
+        "pn_request_body"
+      ]
+    },
+    {
+      "path": "turso/turso.build",
+      "sha256": "621e1e4f0ac1e3c142b747a8bc1c8b96640bbb246f0044128547f612f91e0bf1",
+      "bytes": 35,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "turso/turso.c",
+      "sha256": "c438378a7e36ded5115e5232306efee239a15da95ec22ba3df1d0f72c2c82624",
+      "bytes": 10356,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "turso/turso.goose",
+      "sha256": "1919123f2ca47048e7d918bf3a8b60726fb5797af48a29b407bb87c0ff8e6859",
+      "bytes": 3682,
+      "symbols": [
+        "pn_db_open",
+        "pn_db_close",
+        "pn_db_exec",
+        "pn_db_prepare",
+        "pn_db_bind_text",
+        "pn_db_bind_blob",
+        "pn_db_bind_integer",
+        "pn_db_bind_null",
+        "pn_db_execute",
+        "pn_db_query",
+        "pn_db_next",
+        "pn_db_column_count",
+        "pn_db_column_type",
+        "pn_db_column_integer",
+        "pn_db_column_real",
+        "pn_db_column_text",
+        "pn_db_column_blob",
+        "pn_db_rows_changed",
+        "pn_db_last_insert_id",
+        "pn_db_error",
+        "pn_password_hash",
+        "pn_password_verify",
+        "connect",
+        "close",
+        "execute",
+        "prepare",
+        "bind_text",
+        "bind_blob",
+        "bind_integer",
+        "bind_null",
+        "bind_opt_text",
+        "bind_opt_int",
+        "run",
+        "query",
+        "next",
+        "column_text",
+        "column_blob",
+        "column_type",
+        "column_integer",
+        "column_opt_text",
+        "column_opt_int",
+        "rows_changed",
+        "last_insert_id",
+        "hash_password",
+        "verify_password",
+        "ping",
+        "last_error"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "users/auth.goose",
+      "sha256": "df35a1bf83908760ee31558f0fb258aecd184dc5099aaae29a717a61cdb9e925",
+      "bytes": 16937,
+      "symbols": [
+        "auth_config_json",
+        "normalize_email",
+        "user_initials",
+        "append_user_profile",
+        "append_user_profile_stored",
+        "issue_session",
+        "json_error_payload",
+        "configured_bcrypt_cost",
+        "json_object_argument_error",
+        "json_string_argument_error",
+        "signup_response",
+        "login_response",
+        "request_token",
+        "auth_error_json",
+        "current_user_response",
+        "signup_response_cost",
+        "login_response_initials"
+      ],
+      "native_calls": [
+        "pn_request_header_raw",
+        "pn_session_token",
+        "pn_user_initials"
+      ]
+    },
+    {
+      "path": "users/bootstrap.goose",
+      "sha256": "179dcb8aa19393badad2d92aea60fc2c2efe5cc6df9c50c2825b811da5d0a37c",
+      "bytes": 4137,
+      "symbols": [
+        "seed_dev_auth",
+        "seed_dev_auth_read"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "users/profile.goose",
+      "sha256": "c187871f5d68fab3485dc1f5180f3c4466a4893b4a583222f61b2b55abf6e885",
+      "bytes": 15720,
+      "symbols": [
+        "preference_member_last",
+        "preference_member_first_index",
+        "merge_preferences",
+        "json_object_cast_error",
+        "update_profile_response",
+        "user_preferences_response",
+        "change_password_response",
+        "update_profile_response_render",
+        "change_password_response_read",
+        "update_profile_response_validate"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "users/sso_profiles.goose",
+      "sha256": "915c329b298d03784feab88d36306b2760f474fe742e395b4f139f46acf30ed1",
+      "bytes": 8467,
+      "symbols": [
+        "sanitize_sso_target",
+        "sso_login_response",
+        "sso_callback_response",
+        "logout_response",
+        "sso_callback_response_store"
+      ],
+      "native_calls": [
+        "pn_query_value"
+      ]
+    },
+    {
+      "path": "workspaces/request_inputs.goose",
+      "sha256": "bddb47f003e3736c906e0d4f5bdf602858853a1b25d81755d52c3eef48f32451",
+      "bytes": 332,
+      "symbols": [],
+      "native_calls": []
+    },
+    {
+      "path": "workspaces/sharing.goose",
+      "sha256": "edef627fea402f118648632c9ccc98c2a9b001021734e2978dbccaddf0b5c7af",
+      "bytes": 15698,
+      "symbols": [
+        "append_collaborator_row",
+        "workspace_share_response",
+        "invite_workspace_collaborator",
+        "update_workspace_collaborator",
+        "remove_workspace_collaborator",
+        "invite_workspace_collaborator_read",
+        "update_workspace_collaborator_read"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "workspaces/tree.goose",
+      "sha256": "3fac30527c837bee7da1d69209457d4b640ff7069f2c44922541357dece771e4",
+      "bytes": 4823,
+      "symbols": [
+        "workspace_tree_response",
+        "workspace_tree_response_handle"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "workspaces/workspace_crud.goose",
+      "sha256": "83b64e6da643c5d982a4086d61edd173dc25d9ece0e5a84a8be942b7bc73270f",
+      "bytes": 7779,
+      "symbols": [
+        "list_workspaces_response",
+        "create_workspace_response",
+        "update_workspace_response",
+        "update_workspace_response_read",
+        "update_workspace_response_read_2"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "workspaces/workspace_deletion.goose",
+      "sha256": "18cce126f4ea53cf1e2a2030a541ae64c22a4bbacf4d2cd747e94062aeb6d47e",
+      "bytes": 12900,
+      "symbols": [
+        "delete_workspace_response",
+        "delete_workspace_response_read",
+        "delete_workspace_response_read_2",
+        "delete_workspace_response_read_3",
+        "delete_workspace_response_store",
+        "delete_workspace_response_read_4",
+        "delete_workspace_response_read_5",
+        "delete_workspace_response_read_6"
+      ],
+      "native_calls": []
+    },
+    {
+      "path": "workspaces/workspace_export.goose",
+      "sha256": "aec41ae6b71988be1167d4c43c24b79139be46261460c42ddf271550c896b40c",
+      "bytes": 17333,
+      "symbols": [
+        "add_workspace_node_index",
+        "add_node_value_set_index",
+        "remove_node_value_set_index",
+        "workspace_access",
+        "workspace_export_node_path",
+        "workspace_export_response",
+        "workspace_export_response_finish",
+        "workspace_export_response_workspace_name",
+        "workspace_export_response_parse",
+        "append_exported_node",
+        "append_exported_node_read",
+        "append_exported_node_handle"
+      ],
+      "native_calls": [
+        "pn_zip_add",
+        "pn_zip_finish",
+        "pn_zip_reset"
+      ]
+    },
+    {
+      "path": "workspaces/workspaces.goose",
+      "sha256": "238a075af2af2b67ef8ed83cb440626af5aa3076993c1c9d1952960033becb2c",
+      "bytes": 9926,
+      "symbols": [
+        "append_workspace",
+        "workspace_not_found_payload",
+        "node_not_found_payload",
+        "sync_workspace_user_index_legacy",
+        "sync_user_preferences_legacy",
+        "append_workspace_user_index",
+        "ensure_workspace_owner_member",
+        "remove_workspace_user_index",
+        "active_workspace_role",
+        "append_workspace_collaborator_index",
+        "remove_workspace_collaborator_index",
+        "append_tree_node_member_index",
+        "remove_tree_node_member_index",
+        "append_prompt_member_index",
+        "remove_prompt_member_index",
+        "append_prompt_version_index"
+      ],
+      "native_calls": []
+    }
+  ]
+}

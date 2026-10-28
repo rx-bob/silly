@@ -1,3 +1,4 @@
+// Streaming proxy integration verifies forwarding, bounded flow and terminal cleanup.
 namespace proxy_test;
 
 import client from "../client";
