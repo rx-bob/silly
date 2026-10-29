@@ -70,10 +70,10 @@ call which never returns, as described by the existing execution/shutdown contra
 
 ## Verification
 
-`tests/stream_test.goose` exercises retained bytes, bounded capacity, short and zero
+`tests/streaming/stream_test.goose` exercises retained bytes, bounded capacity, short and zero
 acknowledgements, timer/input eligibility, overflow, commitment, terminal cleanup and
-stale generations. `tests/stream_server_test.goose` exercises the production socket
-path. `tests/stream_backpressure_test.goose` fills a real socket, observes production
+stale generations. `tests/streaming/stream_server_test.goose` exercises the production socket
+path. `tests/streaming/stream_backpressure_test.goose` fills a real socket, observes production
 pause while another route remains responsive, then drains and verifies resumption.
 Existing continuation/resource fixtures remain regression coverage. Compiler
 negative fixtures reject escaped handler-local state and retained input views.

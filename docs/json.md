@@ -71,7 +71,7 @@ Retain the binding rather than only its model when this distinction matters.
 
 `bind_json_with` accepts a static custom reader. Compose fields with `json_read_field`
 and `json_read_field_with`; `json_read_array` fills an exact-size fixed array and
-`json_read_list` fills an inline bounded list. See `tests/json_body_test.goose` for working
+`json_read_list` fills an inline bounded list. See `tests/json/json_body_test.goose` for working
 nested collection adapters and borrowed string collections. These explicit adapters avoid
 ambiguous generic struct/array overloads in the current compiler.
 
@@ -89,7 +89,7 @@ output, or use the named array writer for numeric byte arrays. Enum and optional
 output are unsupported compile-time errors. Invalid UTF-8 and nonfinite floats fail.
 
 `write_json_object_with(writer, model, field_writer)` supplies custom static field
-writers, including collection adapters. `tests/json_writer_test.goose` demonstrates a
+writers, including collection adapters. `tests/json/json_writer_test.goose` demonstrates a
 nested PromptNook-shaped object with camelCase aliases and arrays of structs. No
 whole-document intermediate string is created; numeric formatting uses small scalar
 temporaries. Callbacks must use bounded writer operations and preserve JSON syntax.

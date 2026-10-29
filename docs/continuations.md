@@ -8,7 +8,7 @@ overloads already exist. E3/E6/E7 implement those behaviors using these primitiv
 
 ## Supported callback surface
 
-`tests/api_contract_test.goose` calls proof-local `serve<R>`, `serve<R,A>` and
+`tests/support/api_contract_test.goose` calls proof-local `serve<R>`, `serve<R,A>` and
 `serve<R,A,S>` with exactly three, five and six arguments, matching the target references.
 The adapters use real `Context<A,S>`, request/response owners, `StreamStart<S>`,
 `start_stream`, `StreamEvent`, `StreamStep`, `Wake` and `ChunkWriter`. Router and lifecycle

@@ -1,6 +1,8 @@
 // Expected rejection: cross-thread work cannot contain borrowed slice addresses.
 namespace borrowed_queue_rejected;
 
+import silly from "../../";
+
 import std;
 
 struct BorrowedWork {

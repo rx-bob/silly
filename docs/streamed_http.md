@@ -42,8 +42,8 @@ socket-read event.
 
 `reference/request_stream.goose` is a runnable byte-preserving upload/download example
 with zero buffered-request storage, an 8 MiB decoded limit and 1024-byte pending chunks.
-`tests/stream_http_test.goose` exercises generated input without total-body buffers;
-`tests/stream_framing_test.goose` checks persistent bodyless boundaries and HTTP/1.0.
+`tests/streaming/stream_http_test.goose` exercises generated input without total-body buffers;
+`tests/streaming/stream_framing_test.goose` checks persistent bodyless boundaries and HTTP/1.0.
 
 The absolute body deadline and idle deadline are checked before an input callback;
 a late final body chunk cannot erase an expired deadline. Input-created output starts

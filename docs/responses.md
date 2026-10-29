@@ -75,9 +75,9 @@ validates a nonempty UTF-8 name, copies it into demo-owned state and redirects w
 The result page escapes the name as HTML text. Invalid names leave previous demo state
 unchanged. This is an in-memory, single-owner demonstration, not durable user storage.
 
-`tests/web_server_test.goose` runs the real example handlers through GET, POST, redirect,
+`tests/support/web_server_test.goose` runs the real example handlers through GET, POST, redirect,
 escaped result and form prefill on one persistent socket with short writes. It includes
-quotes, script-shaped input, ampersands, NUL and invalid UTF-8. `tests/html_test.goose`
+quotes, script-shaped input, ampersands, NUL and invalid UTF-8. `tests/response/html_test.goose`
 covers contexts, limits and guard exits; its lifetime negative rejects escaped writers.
-`tests/responses_test.goose` covers binary bytes, optional metadata, injection, exact
+`tests/response/responses_test.goose` covers binary bytes, optional metadata, injection, exact
 capacity boundaries and duplicate-response rejection through helpers.

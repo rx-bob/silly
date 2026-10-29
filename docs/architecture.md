@@ -10,7 +10,7 @@ than a claim that later capabilities are missing. Start with the current
 ## Package boundary and verification
 
 `silly.goose` is the library root; it does not own `main`. A consumer root imports
-`silly from "path/to/silly"`. `tests/consumer_import.goose` is a separate executable
+`silly from "path/to/silly"`. `tests/support/consumer_import.goose` is a separate executable
 using the normal relative package import, not a project-module import. `silly.build`
 declares `native/transport.c`, `native/files.c` and `native/control.c`. No PromptNook, Turso, bcrypt, zlib,
 libcurl, application startup, or PoC module is imported or linked by this package.
@@ -19,10 +19,10 @@ E1.S3 adds the core OS transport; E9.S1 introduces a separate optional client pa
 Run from the repository root:
 
 ```text
-goose check tests/consumer_import.goose
-goose build tests/consumer_import.goose --offline -O2 -o /tmp/silly-consumer-release
+goose check tests/support/consumer_import.goose
+goose build tests/support/consumer_import.goose --offline -O2 -o /tmp/silly-consumer-release
 /tmp/silly-consumer-release
-goose build tests/consumer_import.goose --offline -O0 --debug -o /tmp/silly-consumer-debug
+goose build tests/support/consumer_import.goose --offline -O0 --debug -o /tmp/silly-consumer-debug
 /tmp/silly-consumer-debug
 /Users/bob/repos/pretty-goose/goosefmt check --config .goosefmt.toml silly.goose tests reference
 goose build reference/dispatch_proof.goose --offline -o /tmp/silly-dispatch-proof

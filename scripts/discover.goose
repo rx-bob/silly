@@ -86,16 +86,28 @@ fn executable_source(config: Config&, path: u8[:]) -> bool {
 }
 
 fn external_fixture(path: u8[:]) -> bool {
-    return path == "tests/client_transport_test.goose" || path == "tests/client_http_test.goose"
-        || path == "tests/proxy_test.goose" || path == "tests/promptnook_proxy_test.goose";
+    return ends_with(path, "/client_transport_test.goose") || ends_with(path, "/client_http_test.goose")
+        || ends_with(path, "/proxy_test.goose") || ends_with(path, "/promptnook_proxy_test.goose");
 }
 
 fn ffi_fixture(path: u8[:]) -> bool {
-    let exceptions = ["scripts/process.goose", "src/file_native.goose", "src/static_native.goose",
-        "src/transport.goose",
+    if ends_with(path, "/files_fixture.goose") || ends_with(path, "/client_fixture.goose")
+        || ends_with(path, "/static_portal_fixture.goose") {
+        return true;
+    }
+    let exceptions = [
+        "scripts/process.goose",
+        "src/files/file_native.goose",
+        "src/files/static_native.goose",
+        "src/transport/transport.goose",
         "client/native.goose",
-        "tests/client_fixture.goose", "tests/files_fixture.goose", "tests/promptnook_proxy_fixture.goose",
-        "tests/proxy_fixture.goose", "tests/static_metadata_fixture.goose", "tests/static_portal_fixture.goose"];
+        "tests/client/client_fixture.goose",
+        "tests/files/files_fixture.goose",
+        "tests/integration/promptnook/promptnook_proxy_fixture.goose",
+        "tests/client/proxy_fixture.goose",
+        "tests/files/static_metadata_fixture.goose",
+        "tests/integration/static_portal/static_portal_fixture.goose",
+    ];
     for exception in exceptions {
         if path == exception {
             return true;

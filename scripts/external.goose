@@ -78,9 +78,9 @@ fn wait_fixture(process: check_process::Result&, ready: u8[:]) -> bool {
 
 fn client_fixture(config: Config&, mode: u8[:], tls: bool, directory: u8[:]) {
     let source = if tls {
-        "tests/client_transport_test.goose"
+        "tests/client/client_transport_test.goose"
     } else {
-        "tests/client_http_test.goose"
+        "tests/client/client_http_test.goose"
     };
     if !compile(config, source, mode) {
         return;
@@ -96,11 +96,12 @@ fn client_fixture(config: Config&, mode: u8[:], tls: bool, directory: u8[:]) {
     var fixture = check_process::Result {
     };
     if tls {
-        fixture = check_process::spawn([argument(config.python[..]), "-I", "tests/client_fixture.py", ready,
+        fixture = check_process::spawn([argument(config.python[..]), "-I", "tests/client/client_fixture.py", ready,
             str(directory, "/server.pem"), str(directory, "/server.key")],
             config.root, logfile(config, str("fixture-transport-", mode)));
     } else {
-        fixture = check_process::spawn([argument(config.python[..]), "-I", "tests/client_http_fixture.py", ready],
+        fixture = check_process::spawn([argument(config.python[..]), "-I",
+            "tests/client/client_http_fixture.py", ready],
             config.root, logfile(config, str("fixture-http-", mode)));
     }
     if wait_fixture(fixture, ready) {
@@ -123,9 +124,9 @@ fn run_client(config: Config&, source: u8[:], mode: u8[:], ready: u8[:], directo
 
 fn proxy_fixture(config: Config&, mode: u8[:], consumer: bool, directory: u8[:]) {
     let source = if consumer {
-        "tests/promptnook_proxy_test.goose"
+        "tests/integration/promptnook/promptnook_proxy_test.goose"
     } else {
-        "tests/proxy_test.goose"
+        "tests/client/proxy_test.goose"
     };
     if !compile(config, source, mode) {
         return;
@@ -133,10 +134,11 @@ fn proxy_fixture(config: Config&, mode: u8[:], consumer: bool, directory: u8[:])
     let executable = binary(config, source, mode);
     if consumer {
         command(config, str("run-", source, "-", mode),
-            [argument(config.python[..]), "-I", "tests/promptnook_proxy_fixture.py", executable, directory]);
+            [argument(config.python[..]), "-I",
+            "tests/integration/promptnook/promptnook_proxy_fixture.py", executable, directory]);
     } else {
         command(config, str("run-", source, "-", mode),
-            [argument(config.python[..]), "-I", "tests/proxy_fixture.py", executable]);
+            [argument(config.python[..]), "-I", "tests/client/proxy_fixture.py", executable]);
     }
 }
 
@@ -147,8 +149,10 @@ fn native_files(config: Config&, mode: u8[:]) {
     } else {
         "-O2"
     };
-    if command(config, str("build-native-files-", mode), ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror", flag,
-        "-g", "-pthread", "-DSILLY_FILES_TEST", "tests/files_native_test.c", "native/files.c", "-o", executable]) {
+    if command(config, str("build-native-files-", mode),
+        ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror", flag,
+        "-g", "-pthread", "-DSILLY_FILES_TEST", "tests/files/files_native_test.c", "native/files.c", "-o",
+        executable]) {
         command(config, str("run-native-files-", mode), [argument(executable[..])]);
     }
 }

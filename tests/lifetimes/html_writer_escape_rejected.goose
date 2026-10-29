@@ -1,8 +1,8 @@
 // Expected rejection: response ownership alone cannot extend the callback-local writer scope.
 namespace html_writer_escape_rejected;
 
-import html from "../../src";
-import html_ufcs from "../../src";
+import html from "../../src/response";
+import html_ufcs from "../../src/response";
 import silly from "../..";
 
 import std;

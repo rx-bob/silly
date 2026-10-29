@@ -33,12 +33,12 @@ fn compiler_checks(config: Config&, mode: u8[:]) {
     }
     run_binary(config, "tests/lifetimes/scoped_views.goose", mode);
     run_binary(config, "reference/dispatch_proof.goose", mode);
-    run_binary(config, "tests/api_contract_test.goose", mode);
+    run_binary(config, "tests/support/api_contract_test.goose", mode);
     if mode != "optimized" {
         return;
     }
-    let targets = ["examples/hello.goose", "tests/route_plan_test.goose", "tests/http_head_test.goose",
-        "tests/stream_http_test.goose", "tests/general_web_test.goose"];
+    let targets = ["examples/hello.goose", "tests/routing/route_plan_test.goose", "tests/http/http_head_test.goose",
+        "tests/streaming/stream_http_test.goose", "tests/integration/general_web/general_web_test.goose"];
     for target in targets {
         let label = str("analysis-", target);
         if command(config, label, [argument(config.goose[..]), "check", target, "-O2", "--stacks", "--bce-lines"]) {

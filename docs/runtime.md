@@ -6,7 +6,7 @@ return path. The application retains the wake writer and can notify it to stop t
 runtime. Existing `serve` calls continue to use one owner.
 
 Goose requires a concrete top-level `thread_fn`: thread entrypoints cannot be generic
-or nested. The application supplies a small bridge, as in `tests/runtime_server_test.goose`:
+or nested. The application supplies a small bridge, as in `tests/runtime/runtime_server_test.goose`:
 
 ```goose
 thread_fn worker(start: silly::WorkerStart, seed: i64) {

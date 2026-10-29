@@ -5,7 +5,7 @@ incremental request input, SSE, a file or an upstream proxy. Complete examples a
 [request_stream.goose](../reference/request_stream.goose),
 [streaming.goose](../reference/streaming.goose), and
 [files_and_portal.goose](../reference/files_and_portal.goose). The
-[combined general-web test](../tests/general_web_test.goose) exercises the general web
+[combined general-web test](../tests/integration/general_web/general_web_test.goose) exercises the general web
 response/input shapes through real loopback transport.
 
 ## State survives; borrowed views do not

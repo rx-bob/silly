@@ -178,7 +178,7 @@ serialized native lane is busy.
 
 
 The executable example is `examples/promptnook_contract/native_state.goose`.
-`tests/native_state_test.goose` links only its small test-owned C adapter through a
+`tests/runtime/native_state_test.goose` links only its small test-owned C adapter through a
 per-test build sidecar; core `silly.build` still links only the transport shim.
 The fixture detects wrong-thread access and interleaved DB/ZIP stages, gates each
 sequence to overlap requests, verifies inline progress and an unrelated lane, and

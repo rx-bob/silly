@@ -1,0 +1,2 @@
+c_sources = ["native_state_fixture.c", "static_portal_fixture.c", "../../../client/native/client.c"];
+c_libs = ["curl", "z"];

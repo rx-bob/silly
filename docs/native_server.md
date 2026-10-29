@@ -91,7 +91,7 @@ changes must preserve these ownership, generation and capacity contracts.
 
 ## Native boundary
 
-`src/transport.goose` is the sole production FFI declaration module;
+`src/transport/transport.goose` is the sole production FFI declaration module;
 `native/transport.c` handles OS operations only. `silly_transport` exposes Descriptor,
 IoResult/OpenResult/PairResult, listen/accept/read/write_parts/poll/close, monotonic time,
 local port, wake sockets, and nonblocking connect helpers used by integration fixtures.
@@ -111,16 +111,16 @@ coordination. Normal return/error/cancellation paths close every owned descripto
 
 ## Verification
 
-- `tests/transport_test.goose`: byte-exact two-vector transfer under a forced 4 KiB
+- `tests/transport/transport_test.goose`: byte-exact two-vector transfer under a forced 4 KiB
   send buffer; partial progress in either vector; actual would-block, EOF, EPIPE and
   TCP reset; SIGPIPE safety; actual SIGALRM-interrupted poll; wakeups; descriptor reuse
   and close-once. Test-only timer/reset helpers live in its separate C sidecar.
-- `tests/http_core_test.goose`: bytewise head fragmentation, exact caps, malformed
+- `tests/http/http_core_test.goose`: bytewise head fragmentation, exact caps, malformed
   request/header input, Host/framing/method/version policy, exact separate response head,
   conflicting application framing and atomic serializer failure.
-- `tests/server_test.goose`: real loopback fast-client completion while an unread 4 MiB
+- `tests/server/server_test.goose`: real loopback fast-client completion while an unread 4 MiB
   transfer remains pending, exact hello body/framing, wake cancellation and thread exit.
-- `tests/server_state_test.goose`: option arithmetic, generations/reuse and retained
+- `tests/server/server_state_test.goose`: option arithmetic, generations/reuse and retained
   transfer offsets through bounded writes (see test source for final assertions).
 
 Build and run functional fixtures separately in `-O2` and `-O0 --debug` modes. E1.S2

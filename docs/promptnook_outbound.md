@@ -6,7 +6,7 @@ production configuration, query a business database, or run a curl subprocess.
 
 Run `sh tests/promptnook_proxy_test.sh` for disposable local HTTP and HTTPS fixtures
 in debug and optimized modes. The runner creates its own CA and server certificate;
-certificate verification remains enabled. `tests/promptnook_audit_cases.goose` is an
+certificate verification remains enabled. `tests/integration/promptnook/promptnook_audit_cases.goose` is an
 additional standalone debug/optimized audit contract test.
 
 ## Portal policy

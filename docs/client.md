@@ -253,7 +253,7 @@ connection reuse, DNS/connect/reset failures, delayed responses, limits, tiny-bu
 pause/resume, cancellation and bounded pool saturation. `tests/client_http_test.sh`
 adds method/header/binary upload coverage, simultaneous upload/download pauses,
 interim and bodyless responses, compression and decoded limits, collection caps and
-explicit redirect handling. `tests/client_response_test.goose` exercises structured
+explicit redirect handling. `tests/client/client_response_test.goose` exercises structured
 metadata normalization and limits without a network fixture. Platform claims apply only
 to the environment actually exercised; Linux remains a supported implementation target.
 

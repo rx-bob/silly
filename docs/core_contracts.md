@@ -106,7 +106,7 @@ conversion. The API refuses to overwrite a Preparing/Prepared/Failed response. A
 commit it cancels with Application error and does not call the converter. Completed or
 cancelled responses remain terminal. The coordinator chooses a bounded fallback if
 conversion fails; E3/E5 will connect this policy to terminal guards and lifecycle hooks.
-`recover_failed_builder` in `tests/context_test.goose` exercises this sequence.
+`recover_failed_builder` in `tests/handlers/context_test.goose` exercises this sequence.
 
 ## Lifetime rules by source
 
@@ -133,8 +133,8 @@ disconnect/invalid sink capacity cancels. An empty response completes even with 
 capacity. `terminal_count` records terminal transitions made by that sink exactly once.
 It captures payload bytes, not HTTP framing; E1.S3/E2 provide real transport/wire output.
 
-Functional fixtures: `tests/context_test.goose`, `tests/request_test.goose`,
-`tests/headers_test.goose`, and `tests/consumer_import.goose`. Build each with
+Functional fixtures: `tests/handlers/context_test.goose`, `tests/request/request_test.goose`,
+`tests/request/headers_test.goose`, and `tests/support/consumer_import.goose`. Build each with
 `goose build <fixture> --offline -O2 -o /tmp/<name>` and again with `-O0 --debug`, then run
 each binary. Check formatting using the repository Pretty Goose formatter and config.
 The context suite covers empty/missing/duplicate responses, metadata commitment,

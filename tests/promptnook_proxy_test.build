@@ -1,2 +1,0 @@
-c_sources = ["promptnook_proxy_fixture.c", "client_fixture.c", "../client/native/client.c"];
-c_libs = ["curl", "z"];

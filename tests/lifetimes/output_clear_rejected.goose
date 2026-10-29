@@ -1,6 +1,8 @@
 // Expected rejection: transport's live output view prevents clearing its owner.
 namespace output_clear_rejected;
 
+import silly from "../../";
+
 import std;
 
 fn::main() {

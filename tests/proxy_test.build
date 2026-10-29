@@ -1,3 +1,0 @@
-// The server package encloses client/; name its optional native dependency explicitly.
-c_sources = ["proxy_fixture.c", "../client/native/client.c"];
-c_libs = ["curl", "z"];

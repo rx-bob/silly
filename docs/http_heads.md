@@ -70,7 +70,7 @@ Verification fixtures cover every two-piece split and bytewise delivery, all tar
 forms, raw duplicates, framing ambiguity, Host literals, sticky failures, EOF, poisoning,
 and exact limits including 8 KiB/16 KiB defaults. Socket tests force seven-byte I/O turns
 and prove invalid requests never dispatch while valid requests before/after still work.
-`goose check tests/http_head_test.goose -O2 --stacks --bce-lines` reports two data-stack
+`goose check tests/http/http_head_test.goose -O2 --stacks --bce-lines` reports two data-stack
 regions, 54/68 index and 10/38 slice checks eliminated. Remaining parser checks are kept;
 there is no checkfree annotation or throughput claim. Stack reservations are virtual.
 

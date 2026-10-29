@@ -111,7 +111,7 @@ convenience redirects remain E5.S1; the example uses existing checked response o
 
 ## Consumer evidence and verification
 
-`tests/query_compat_test.goose` derives fixtures from retained PromptNook source:
+`tests/request/query_compat_test.goose` derives fixtures from retained PromptNook source:
 `backend/goose/http_posix.c:893` (`pn_query_value`), `:947` (`pn_query_has`),
 `admin/raw_prefix_scans.goose:347,368`, and `portal/portal.goose:216`.
 Decoded `%65nvironment` lookup and raw `environment` presence intentionally differ;

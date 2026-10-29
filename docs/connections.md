@@ -61,7 +61,7 @@ a blocked interim response, or a fatal socket read/write failure closes directly
 server cannot safely emit a second envelope. No renderer is invoked for fatal transport
 errors where write safety is unknown. Idle timeout also bounds attempts to send errors.
 
-See `tests/http_connection_test.goose` for persistence and reset contracts and existing
+See `tests/http/http_connection_test.goose` for persistence and reset contracts and existing
 HTTP head/body/response socket fixtures for malformed input and explicit-close behavior.
-`tests/http_connection_errors_test.goose` checks half-close truncation, partial-input
+`tests/http/http_connection_errors_test.goose` checks half-close truncation, partial-input
 timeouts, quiet idle close and renderer fallback.

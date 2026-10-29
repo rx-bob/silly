@@ -10,7 +10,7 @@ import.discover;
 
 fn functional_checks(config: Config&, mode: u8[:]) {
     var sources: u8[>..] = [];
-    if !append_sources(sources, config.root, "tests") {
+    if !tree_sources(sources, config.root, "tests") {
         report(config, "functional-discovery", false);
         return;
     }
@@ -21,7 +21,8 @@ fn functional_checks(config: Config&, mode: u8[:]) {
             continue;
         }
         let source = sources[start..end];
-        if source != "tests/all.goose" && !external_fixture(source) && executable_source(config, source) {
+        if source != "tests/all.goose" && !starts_with(source, "tests/lifetimes/")
+            && !external_fixture(source) && executable_source(config, source) {
             found += 1;
             run_binary(config, source, mode);
         }
