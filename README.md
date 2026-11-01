@@ -1,4 +1,4 @@
-<p align="center">
+<p align="right">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/logo_main.png">
     <img src="assets/logo_light_bg.png" alt="Silly" width="320">
