@@ -11,7 +11,7 @@ struct Config {
     output: u8[..4096] = [],
     goose: u8[..4096] = [],
     formatter: u8[..4096] = [],
-    python: u8[..4096] = [],
+    ruby: u8[..4096] = [],
     mode: u8[..16] = [],
     group: u8[..32] = [],
     failed: i64 = 0,
@@ -25,7 +25,7 @@ fn config() -> Config {
     result.output.append(str("/tmp/silly-check-", check_process::pid()));
     result.goose.append(environment("GOOSE", "goose"));
     result.formatter.append(environment("GOOSEFMT", "goosefmt"));
-    result.python.append(environment("PYTHON", "python3"));
+    result.ruby.append(environment("RUBY", "ruby"));
     result.mode.append("both");
     result.group.append("all");
     return result;
@@ -37,7 +37,7 @@ fn parse_config(config: Config&) -> bool {
     while index < argv.len {
         if argv[index] == "--help" {
             print("check --mode debug|optimized|both --group all|functional|compiler|style|references|external");
-            print("      --root PATH --output PATH --goose PATH --formatter PATH --python PATH");
+            print("      --root PATH --output PATH --goose PATH --formatter PATH --ruby PATH");
             exit(0);
         }
         if index + 1 >= argv.len || argv[index + 1].len > 4000 {
@@ -57,9 +57,9 @@ fn parse_config(config: Config&) -> bool {
         } else if name == "--formatter" {
             config.formatter.clear();
             config.formatter.append(value);
-        } else if name == "--python" {
-            config.python.clear();
-            config.python.append(value);
+        } else if name == "--ruby" {
+            config.ruby.clear();
+            config.ruby.append(value);
         } else if name == "--mode" && value.len <= 16 {
             config.mode.clear();
             config.mode.append(value);

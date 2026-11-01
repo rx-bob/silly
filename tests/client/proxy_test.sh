@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/silly-proxy-check.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT HUP INT TERM
 cd "$repo_dir"
@@ -10,5 +10,5 @@ for mode in debug optimized; do
     else
         GOOSE_HOME="$check_dir/cache-$mode" goose build tests/client/proxy_test.goose --offline -O2 -o "$check_dir/$mode"
     fi
-    python3 tests/client/proxy_fixture.py "$check_dir/$mode"
+    ruby tests/client/proxy_fixture.rb "$check_dir/$mode"
 done

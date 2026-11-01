@@ -14,16 +14,16 @@ extern fn silly_check_test_path(restore: i32) -> i32;
 fn run(directory: u8[:]) {
     let log = str(directory, "/literal.log");
     let literal = "a space;$(must-not-run)`nor-this`";
-    let code = str("import os,sys; print(sys.argv[1]); ",
-        "print(os.getcwd()==os.path.realpath(sys.argv[2])); print(os.environ['SILLY_ARG_TEST'])");
-    let result = check_process::run(["env", "SILLY_ARG_TEST=literal;$()", "python3", "-c", code, literal, directory],
+    let code = str("puts ARGV[0]; ",
+        "puts(Dir.pwd == File.realpath(ARGV[1]) ? 'True' : 'False'); puts ENV['SILLY_ARG_TEST']");
+    let result = check_process::run(["env", "SILLY_ARG_TEST=literal;$()", "ruby", "-e", code, literal, directory],
         directory, log);
     assert(check_process::ok(result));
     assert(silly_check_test_reaped(result.pid) == 1);
     var output: u8[>..] = [];
     assert(read_file(log, output));
     assert(output == str(literal, "\nTrue\nliteral;$()\n"));
-    let failure = check_process::run(["python3", "-c", "raise SystemExit(7)"], directory, log);
+    let failure = check_process::run(["ruby", "-e", "exit 7"], directory, log);
     assert(failure.state == 1);
     assert(failure.code == 7);
     assert(silly_check_test_reaped(failure.pid) == 1);
@@ -59,8 +59,8 @@ fn relative_paths(directory: u8[:]) {
 fn log_limits(directory: u8[:]) {
     let log = str(directory, "/large.log");
     let data = str(directory, "/artifact");
-    let code = "import sys; open(sys.argv[1], 'wb').write(b'x'*(20*1024*1024)); print('retained')";
-    assert(check_process::ok(check_process::run(["python3", "-I", "-c", code, data], directory, log)));
+    let code = "File.binwrite(ARGV[0], 'x' * (20 * 1024 * 1024)); puts 'retained'";
+    assert(check_process::ok(check_process::run(["ruby", "-e", code, data], directory, log)));
     var output: u8[>..] = [];
     assert(check_process::read_log(log, output));
     assert(output == "retained\n");
@@ -77,11 +77,17 @@ fn log_limits(directory: u8[:]) {
 
 fn timeout(directory: u8[:]) {
     let log = str(directory, "/timeout.log");
-    let code = str("import subprocess,signal,time\n",
-        "child=subprocess.Popen(['python3','-c','import time; time.sleep(30)'])\n",
-        "def stop(sig, frame):\n child.wait(timeout=2)\n print('child-reaped',flush=True)\n raise SystemExit(0)\n",
-        "signal.signal(signal.SIGTERM,stop)\nprint('ready',flush=True)\ntime.sleep(30)\n");
-    var result = check_process::spawn(["python3", "-u", "-c", code], directory, log);
+    let code = str("child = Process.spawn('ruby', '-e', 'sleep 30')\n",
+        "trap('TERM') do\n",
+        "  Process.wait(child)\n",
+        "  $stdout.puts 'child-reaped'\n",
+        "  $stdout.flush\n",
+        "  exit 0\n",
+        "end\n",
+        "puts 'ready'\n",
+        "$stdout.flush\n",
+        "sleep 30\n");
+    var result = check_process::spawn(["ruby", "-e", code], directory, log);
     assert(result.state == 0);
     check_process::wait(result, 300);
     assert(result.state == 4);

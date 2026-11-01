@@ -136,7 +136,7 @@ It captures payload bytes, not HTTP framing; E1.S3/E2 provide real transport/wir
 Functional fixtures: `tests/handlers/context_test.goose`, `tests/request/request_test.goose`,
 `tests/request/headers_test.goose`, and `tests/support/consumer_import.goose`. Build each with
 `goose build <fixture> --offline -O2 -o /tmp/<name>` and again with `-O0 --debug`, then run
-each binary. Check formatting using the repository Pretty Goose formatter and config.
+each binary. Check formatting using the repository goosefmt formatter and config.
 The context suite covers empty/missing/duplicate responses, metadata commitment,
 capacity failures, partial/blocked/disconnected drains, terminal-once behavior and
 custom conversion after discarding failed builders.

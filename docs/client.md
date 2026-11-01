@@ -247,7 +247,7 @@ headers or preserve custom methods unexpectedly. See curl's [redirect behavior](
 `tests/client_transport_test.sh` creates temporary local CA/server certificates and
 starts a local HTTP/HTTPS fixture, then builds/runs the transport suite in Debug and
 O2. Each mode uses an isolated native build cache so libcurl adapter C code is
-compiled with the selected optimization too. Test tooling may invoke OpenSSL/Python; client request handling never invokes a
+compiled with the selected optimization too. Test tooling may invoke OpenSSL/Ruby; client request handling never invokes a
 subprocess. Fixtures exercise HTTP/TLS success, untrusted and mismatched certificates,
 connection reuse, DNS/connect/reset failures, delayed responses, limits, tiny-buffer
 pause/resume, cancellation and bounded pool saturation. `tests/client_http_test.sh`

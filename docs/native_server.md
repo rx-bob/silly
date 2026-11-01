@@ -147,7 +147,7 @@ in this workspace; no consumer source or host compiler installation was changed.
 and scheduler checks remain. Hello uses 14 data-stack regions at the compiler's default
 2 GiB virtual reservation each; this is virtual address space, not resident memory.
 
-The Pretty Goose formatter currently reports G015 on every non-const extern slice,
+The goosefmt formatter currently reports G015 on every non-const extern slice,
 including writable destinations. The three destinations in `transport.goose` genuinely
 receive bytes/events/descriptors and cannot be const. Check only that file with
 `.goosefmt.ffi.toml`, which disables this one false-positive rule; use `.goosefmt.toml`

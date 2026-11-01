@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/silly-client-check.XXXXXX")
 fixture_pid=
 cleanup() {
@@ -18,16 +18,16 @@ extendedKeyUsage=serverAuth
 EXT
 openssl x509 -req -in "$check_dir/server.csr" -CA "$check_dir/ca.pem" -CAkey "$check_dir/ca.key" \
     -CAcreateserial -out "$check_dir/server.pem" -days 1 -extfile "$check_dir/extensions" >>"$check_dir/cert.log" 2>&1
-python3 "$repo_dir/tests/client/client_fixture.py" "$check_dir/ready.json" "$check_dir/server.pem" "$check_dir/server.key" &
+ruby "$repo_dir/tests/client/client_fixture.rb" "$check_dir/ready.json" "$check_dir/server.pem" "$check_dir/server.key" &
 fixture_pid=$!
 for turn in $(seq 1 100); do
     if [ -f "$check_dir/ready.json" ]; then break; fi
     sleep 0.02
 done
-SILLY_CLIENT_HTTP=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["http"])' "$check_dir/ready.json")
-SILLY_CLIENT_HTTPS=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["https"])' "$check_dir/ready.json")
-SILLY_CLIENT_REFUSED=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["refused"])' "$check_dir/ready.json")
-SILLY_CLIENT_STALL=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["stall"])' "$check_dir/ready.json")
+SILLY_CLIENT_HTTP=$(ruby -rjson -e 'puts JSON.parse(File.read(ARGV[0]))["http"]' "$check_dir/ready.json")
+SILLY_CLIENT_HTTPS=$(ruby -rjson -e 'puts JSON.parse(File.read(ARGV[0]))["https"]' "$check_dir/ready.json")
+SILLY_CLIENT_REFUSED=$(ruby -rjson -e 'puts JSON.parse(File.read(ARGV[0]))["refused"]' "$check_dir/ready.json")
+SILLY_CLIENT_STALL=$(ruby -rjson -e 'puts JSON.parse(File.read(ARGV[0]))["stall"]' "$check_dir/ready.json")
 SILLY_CLIENT_CA=$check_dir/ca.pem
 export SILLY_CLIENT_HTTP SILLY_CLIENT_HTTPS SILLY_CLIENT_CA SILLY_CLIENT_REFUSED SILLY_CLIENT_STALL
 cd "$repo_dir"

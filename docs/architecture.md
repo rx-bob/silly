@@ -24,7 +24,7 @@ goose build tests/support/consumer_import.goose --offline -O2 -o /tmp/silly-cons
 /tmp/silly-consumer-release
 goose build tests/support/consumer_import.goose --offline -O0 --debug -o /tmp/silly-consumer-debug
 /tmp/silly-consumer-debug
-/Users/bob/repos/pretty-goose/goosefmt check --config .goosefmt.toml silly.goose tests reference
+/Users/bob/repos/goosefmt/goosefmt check --config .goosefmt.toml silly.goose tests reference
 goose build reference/dispatch_proof.goose --offline -o /tmp/silly-dispatch-proof
 /tmp/silly-dispatch-proof
 ```
@@ -107,7 +107,7 @@ environment selection, migrations, seeding and reset behavior remain in PromptNo
 ## Mandatory style and resource contract
 
 The normative guide is
-[/Users/bob/repos/pretty-goose/docs/styleguide.md](/Users/bob/repos/pretty-goose/docs/styleguide.md).
+[/Users/bob/repos/goosefmt/docs/styleguide.md](/Users/bob/repos/goosefmt/docs/styleguide.md).
 `.goosefmt.toml` copies that repository's configuration. Use its repository formatter;
 the older PATH formatter does not support all configured rules. Historical PoC files
 are excluded from formatting edits. Newly shipped code and reference files are checked.

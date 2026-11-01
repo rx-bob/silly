@@ -1,4 +1,4 @@
-// Goose replaces shell wrappers. Python files remain disposable HTTP/TLS protocol fixtures.
+// Goose replaces shell wrappers. Ruby files remain disposable HTTP/TLS protocol fixtures.
 namespace silly_check;
 
 import json;
@@ -96,12 +96,12 @@ fn client_fixture(config: Config&, mode: u8[:], tls: bool, directory: u8[:]) {
     var fixture = check_process::Result {
     };
     if tls {
-        fixture = check_process::spawn([argument(config.python[..]), "-I", "tests/client/client_fixture.py", ready,
+        fixture = check_process::spawn([argument(config.ruby[..]), "tests/client/client_fixture.rb", ready,
             str(directory, "/server.pem"), str(directory, "/server.key")],
             config.root, logfile(config, str("fixture-transport-", mode)));
     } else {
-        fixture = check_process::spawn([argument(config.python[..]), "-I",
-            "tests/client/client_http_fixture.py", ready],
+        fixture = check_process::spawn([argument(config.ruby[..]),
+            "tests/client/client_http_fixture.rb", ready],
             config.root, logfile(config, str("fixture-http-", mode)));
     }
     if wait_fixture(fixture, ready) {
@@ -134,11 +134,11 @@ fn proxy_fixture(config: Config&, mode: u8[:], consumer: bool, directory: u8[:])
     let executable = binary(config, source, mode);
     if consumer {
         command(config, str("run-", source, "-", mode),
-            [argument(config.python[..]), "-I",
-            "tests/integration/promptnook/promptnook_proxy_fixture.py", executable, directory]);
+            [argument(config.ruby[..]),
+            "tests/integration/promptnook/promptnook_proxy_fixture.rb", executable, directory]);
     } else {
         command(config, str("run-", source, "-", mode),
-            [argument(config.python[..]), "-I", "tests/client/proxy_fixture.py", executable]);
+            [argument(config.ruby[..]), "tests/client/proxy_fixture.rb", executable]);
     }
 }
 
