@@ -1,4 +1,4 @@
-# Use only for src/transport.goose: G015 misclassifies writable FFI output slices.
+# Use only for transport/file native boundaries and tests/files_fixture.goose (writable FFI output).
 # All other guide rules remain enabled. Read-only FFI inputs still require const.
 [format]
 indent_width = 4
